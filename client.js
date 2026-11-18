@@ -8,15 +8,6 @@ window.__ModuleLoader__.load({
     const NS = 'dsh-web-hub'
     const BUNDLE = 'dsh-web-hub'
 
-    /** Tool names are `<provider>_<tool>`; the suffix picks the localized label. */
-    const TOOL_LABEL_KEYS = {
-      search: 'tool_search',
-      extract: 'tool_extract',
-      get_sub_domains: 'tool_get_sub_domains',
-      batch_search: 'tool_batch_search',
-      score: 'tool_score',
-    }
-
     const zh = {
       source: '来源',
       sourceHint: '同一时刻只有一个来源生效。',
@@ -25,21 +16,23 @@ window.__ModuleLoader__.load({
       using: '使用中',
       disable: '关闭',
       key: '密钥',
-      keyHint: '可选。留空即匿名调用，限额较低。',
-      keyPlaceholder: '粘贴 Key',
+      keyHint: '可选，留空按匿名调用。',
+      keyPlaceholder: '粘贴 Key（可留空）',
+      keyPlaceholderConfigured: '已配置 · 粘贴新 Key 可替换',
       keySave: '保存',
       keyClear: '清除',
       configured: '已配置',
       missing: '未配置',
       tools: '工具',
       toolsHint: '没勾选的工具不会出现在模型工具列表里。',
-      toolsOff: '先选择一个来源，才能打开工具。',
       advanced: '扩展',
+      builtin: '内置网页工具',
+      builtinHide: '隐藏内置的 web_search / web_fetch',
+      builtinHint: '屏蔽 DSH 自带的网页工具，避免与上面的工具重复。',
       reload: '重新读取',
       loadError: '读取配置失败',
       saveError: '保存失败',
       conflict: '配置已被其它改动更新，已重新读取。',
-      saved: '已生效',
       applying: '应用中…',
     }
 
@@ -51,21 +44,23 @@ window.__ModuleLoader__.load({
       using: 'In use',
       disable: 'Turn off',
       key: 'Key',
-      keyHint: 'Optional. Empty means anonymous calls at a lower rate limit.',
-      keyPlaceholder: 'Paste a key',
+      keyHint: 'Optional; empty means anonymous calls.',
+      keyPlaceholder: 'Paste a key (optional)',
+      keyPlaceholderConfigured: 'Configured · paste a new key to replace',
       keySave: 'Save',
       keyClear: 'Clear',
       configured: 'set',
       missing: 'not set',
       tools: 'Tools',
       toolsHint: 'Tools that are off never reach the model.',
-      toolsOff: 'Pick a source before turning tools on.',
       advanced: 'extended',
+      builtin: 'Built-in web tools',
+      builtinHide: 'Hide the built-in web_search / web_fetch',
+      builtinHint: 'Mask the web tools DSH ships so they do not duplicate the ones above.',
       reload: 'Reload',
       loadError: 'Could not read the configuration',
       saveError: 'Could not save',
       conflict: 'Configuration changed elsewhere; reloaded.',
-      saved: 'Applied',
       applying: 'Applying…',
     }
 
@@ -81,6 +76,7 @@ window.__ModuleLoader__.load({
       '.hub-row-main{display:flex;flex-direction:column;gap:3px;min-width:0}',
       '.hub-label{display:flex;align-items:center;gap:8px}',
       '.hub-mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;color:var(--dsw-alias-text-l3)}',
+      '.hub-name{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px}',
       '.hub-side{display:flex;align-items:center;gap:8px;flex:none}',
       '.hub-foot{display:flex;align-items:center;justify-content:space-between;gap:10px}',
       '.hub-error{font-size:12px;color:var(--dsw-alias-state-error-primary,#d33)}',
@@ -202,14 +198,10 @@ window.__ModuleLoader__.load({
       const active = typeof value.active === 'string' ? value.active : ''
       const provider = providers[active] || {}
       const keyRef = typeof provider.keyRef === 'string' ? provider.keyRef : ''
+      const configured = keyState !== undefined && keyState.configured === true
       const names = Object.keys(tools)
       const enabled = names.filter((name) => tools[name] === true).length
       const providerIds = Object.keys(providers)
-
-      const toolLabel = (name) => {
-        const key = TOOL_LABEL_KEYS[name.slice(name.indexOf('_') + 1)]
-        return key === undefined ? name : t(key)
-      }
 
       const saveKey = () => {
         if (busy || keyRef.length === 0 || keyDraft.trim().length === 0) return
@@ -254,16 +246,16 @@ window.__ModuleLoader__.load({
                   }, t('disable'))),
                 h(Line, {
                   title: h('span', null, t('key')),
-                  hint: h('span', { className: 'hub-hint' },
-                    keyRef.length > 0 ? keyRef : t('keyHint'),
-                    ' · ',
-                    keyState !== undefined && keyState.configured === true ? t('configured') : t('missing')),
+                  tag: configured
+                    ? h(UI.Tag, { tone: 'info' }, t('configured'))
+                    : h(UI.Tag, { tone: 'neutral' }, t('missing')),
+                  hint: h('span', { className: 'hub-mono' }, keyRef.length > 0 ? keyRef : t('keyHint')),
                 },
                   h('div', { className: 'hub-side' },
                     h(UI.Input, {
                       type: 'password',
                       value: keyDraft,
-                      placeholder: t('keyPlaceholder'),
+                      placeholder: configured ? t('keyPlaceholderConfigured') : t('keyPlaceholder'),
                       disabled: busy || keyRef.length === 0,
                       onChange: (event) => setKeyDraft(event.target.value),
                     }),
@@ -273,7 +265,7 @@ window.__ModuleLoader__.load({
                       disabled: busy || keyDraft.trim().length === 0,
                       onClick: saveKey,
                     }, t('keySave')),
-                    keyState !== undefined && keyState.configured === true
+                    configured
                       ? h(UI.Button, { variant: 'outline', size: 'sm', disabled: busy, onClick: clearKey }, t('keyClear'))
                       : null)))
               : h(Line, { key: id, title: h('span', { className: 'hub-mono' }, id) },
@@ -292,15 +284,25 @@ window.__ModuleLoader__.load({
             ? h('div', { className: 'hub-row' }, h('span', { className: 'hub-hint' }, t('none')))
             : names.map((name) => h(Line, {
               key: name,
-              title: h('span', null, toolLabel(name)),
+              title: h('span', { className: 'hub-name' }, name),
               tag: name.endsWith('_search') || name.endsWith('_extract') ? null : h(UI.Tag, { tone: 'neutral' }, t('advanced')),
-              hint: h('span', { className: 'hub-mono' }, name),
             }, h(UI.Switch, {
               checked: tools[name] === true,
-              label: toolLabel(name),
+              label: name,
               disabled: busy || active === '',
               onChange: (next) => apply({ tools: { ...tools, [name]: next } }, { tools: { ...tools, [name]: next } }),
             })))),
+
+        h(Card, { title: t('builtin') },
+          h(Line, {
+            title: h('span', null, t('builtinHide')),
+            hint: t('builtinHint'),
+          }, h(UI.Switch, {
+            checked: value.hideBuiltinWeb !== false,
+            label: t('builtinHide'),
+            disabled: busy,
+            onChange: (next) => apply({ hideBuiltinWeb: next }, { hideBuiltinWeb: next }),
+          }))),
 
         h('div', { className: 'hub-foot' },
           h('span', { className: 'hub-status' },

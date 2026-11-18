@@ -28,8 +28,7 @@ window.__ModuleLoader__.load({
       toolsHint: '没勾选的工具不会出现在模型工具列表里。',
       advanced: '扩展',
       builtin: '内置网页工具',
-      builtinHide: '隐藏内置的 web_search / web_fetch',
-      builtinHint: '屏蔽 DSH 自带的网页工具，避免与上面的工具重复。',
+      builtinHide: '隐藏 web_search / web_fetch',
       reload: '重新读取',
       loadError: '读取配置失败',
       saveError: '保存失败',
@@ -57,8 +56,7 @@ window.__ModuleLoader__.load({
       toolsHint: 'Tools that are off never reach the model.',
       advanced: 'extended',
       builtin: 'Built-in web tools',
-      builtinHide: 'Hide the built-in web_search / web_fetch',
-      builtinHint: 'Mask the web tools DSH ships so they do not duplicate the ones above.',
+      builtinHide: 'Hide web_search / web_fetch',
       reload: 'Reload',
       loadError: 'Could not read the configuration',
       saveError: 'Could not save',
@@ -270,11 +268,8 @@ window.__ModuleLoader__.load({
 
         rows.push(h(Line, {
           key: id + ':key',
-          title: h('span', null, t('key')),
-          tag: configured
-            ? h(UI.Tag, { tone: 'info' }, t('configured'))
-            : h(UI.Tag, { tone: 'neutral' }, t('missing')),
-          hint: h('span', { className: 'hub-hint' },
+          title: h('span', { className: 'hub-label' },
+            t('key'),
             h('span', { className: 'hub-mono' }, keyRef.length > 0 ? keyRef : t('keyHint')),
             consoleURL.length > 0
               ? h('a', {
@@ -284,6 +279,9 @@ window.__ModuleLoader__.load({
                 rel: 'noreferrer noopener',
               }, t('getKey'))
               : null),
+          tag: configured
+            ? h(UI.Tag, { tone: 'info' }, t('configured'))
+            : h(UI.Tag, { tone: 'neutral' }, t('missing')),
         },
           h('div', { className: 'hub-side' },
             h(UI.Input, {
@@ -344,7 +342,7 @@ window.__ModuleLoader__.load({
       const { state, busy } = hub
       const hidden = state.value.hideBuiltinWeb !== false
       return h(Card, { title: t('builtin') },
-        h(Line, { title: h('span', null, t('builtinHide')), hint: t('builtinHint') },
+        h(Line, { title: h('span', null, t('builtinHide')) },
           h(UI.Switch, {
             checked: hidden,
             label: t('builtinHide'),

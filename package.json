@@ -1,6 +1,6 @@
 {
   "name": "dsh-web-hub",
-  "version": "0.3.5",
+  "version": "0.4.0",
   "description": "DeepSeek Harness plugin: search and fetch tools from multiple providers, switched per tool.",
   "type": "module",
   "license": "MIT",
@@ -12,7 +12,10 @@
     "deepseek-harness",
     "search",
     "fetch",
-    "anysearch"
+    "anysearch",
+    "exa",
+    "tavily",
+    "firecrawl"
   ],
   "engines": {
     "dsh": ">=0.2.2-rc.3"

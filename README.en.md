@@ -63,6 +63,17 @@ Open **Plugins → dsh-web-hub**:
 
 Switches and the source selection apply instantly; a key is saved with the button.
 
+## Supported providers
+
+| Provider | Search | Extract | Works without a key |
+|---|---|---|---|
+| **AnySearch** | ✅ | ✅ | ✅ anonymous, lower limits |
+| **Exa** | ✅ | ✅ | ✅ |
+| **Tavily** | ✅ | ✅ | ✅ daily allowance, then needs a key |
+| **Firecrawl** | ⚠️ search needs a key | ✅ | extraction is keyless |
+
+Exactly one provider is active at a time; the model sees the new tool set on its next step.
+
 ## What each switch does
 
 | Switch | Effect |

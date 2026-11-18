@@ -2,11 +2,13 @@
  * AnySearch adapter — five provider-owned tools over the hosted MCP endpoint.
  *
  * The adapter owns its tool names, descriptions and JSON Schemas; the hub only
- * prefixes the provider id and decides which of them are mounted. Nothing here
- * knows about `ctx.web`, other providers, or the panel.
+ * prefixes the provider id and decides which of them are mounted. Transport is
+ * the shared MCP helper, so this file is contracts plus argument mapping.
  */
 
-const CLIENT_HEADER = 'dsh-web-hub/0.1.0'
+import { callTool } from './mcp.js'
+
+const CLIENT_HEADER = 'dsh-web-hub/0.4.0'
 
 const DOMAINS = [
   'academic', 'agriculture', 'business', 'code', 'energy', 'environment', 'film',
@@ -14,78 +16,11 @@ const DOMAINS = [
   'social_media', 'travel',
 ]
 
-/**
- * Decode one JSON-RPC payload, tolerating both a plain JSON body and an SSE frame.
- * @param text - raw response body.
- */
-function parsePayload(text) {
-  const trimmed = text.trim()
-  if (trimmed.length === 0) return undefined
-  if (trimmed.startsWith('{') || trimmed.startsWith('[')) return JSON.parse(trimmed)
-  for (const line of trimmed.split(/\r?\n/)) {
-    if (!line.startsWith('data:')) continue
-    const body = line.slice(5).trim()
-    if (body.length === 0 || body === '[DONE]') continue
-    return JSON.parse(body)
-  }
-  return undefined
-}
-
-/**
- * One JSON-RPC round trip. The endpoint is stateless, so no session handshake is kept.
- * @param cfg - provider settings (`baseURL`).
- * @param key - credential value, absent for anonymous access.
- * @param method - JSON-RPC method.
- * @param params - method params.
- * @param signal - caller cancellation.
- */
-async function rpc(cfg, key, method, params, signal) {
-  const headers = {
-    'content-type': 'application/json',
-    accept: 'application/json, text/event-stream',
-    'x-anysearch-client': CLIENT_HEADER,
-  }
-  if (typeof key === 'string' && key.length > 0) headers.authorization = `Bearer ${key}`
-  const response = await fetch(cfg.baseURL, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
-    signal,
-  })
-  const text = await response.text()
-  if (response.status === 429) {
-    throw new Error(
-      'rate limit reached'
-      + (typeof key === 'string' && key.length > 0
-        ? '; wait as the response instructs or raise the plan for this key'
-        : '; this call ran anonymously, so configure an API key for a higher limit'),
-    )
-  }
-  if (!response.ok) {
-    throw new Error(`anysearch ${method}: HTTP ${response.status} ${text.slice(0, 300)}`)
-  }
-  const payload = parsePayload(text)
-  if (payload === undefined) throw new Error(`anysearch ${method}: empty response`)
-  if (payload.error !== undefined) {
-    const message = payload.error?.message ?? JSON.stringify(payload.error)
-    throw new Error(`anysearch ${method}: ${message}`)
-  }
-  return payload.result ?? {}
-}
-
-/**
- * Call one MCP tool and flatten its text blocks.
- * @returns the tool's text output, which the provider defines as Markdown.
- */
-async function callTool(cfg, key, name, args, signal) {
-  const result = await rpc(cfg, key, 'tools/call', { name, arguments: args }, signal)
-  const blocks = Array.isArray(result.content) ? result.content : []
-  const text = blocks
-    .filter((block) => block && block.type === 'text' && typeof block.text === 'string')
-    .map((block) => block.text)
-    .join('\n\n')
-  if (result.isError === true) throw new Error(text.length > 0 ? text : `anysearch ${name} failed`)
-  return text
+/** One request sender for this provider: endpoint, headers, shared client. */
+function send(cfg, key) {
+  const headers = { 'x-anysearch-client': CLIENT_HEADER }
+  if (key) headers.authorization = `Bearer ${key}`
+  return (name, args, signal) => callTool({ url: cfg.baseURL, headers, name, args, signal })
 }
 
 /** @type {import('./index.js').Adapter} */
@@ -125,7 +60,7 @@ const anysearch = {
         required: ['query'],
         additionalProperties: false,
       },
-      run: ({ cfg, key, args, signal }) => callTool(cfg, key, 'search', {
+      run: ({ cfg, key, args, signal }) => send(cfg, key)('search', {
         ...args,
         max_results: typeof args.max_results === 'number' ? args.max_results : cfg.maxResults,
       }, signal),
@@ -143,7 +78,7 @@ const anysearch = {
         additionalProperties: false,
       },
       run: async ({ cfg, key, args, signal }) => {
-        const text = await callTool(cfg, key, 'extract', { url: args.url }, signal)
+        const text = await send(cfg, key)('extract', { url: args.url }, signal)
         // The endpoint answers with a JSON envelope { url, title, content } where
         // `content` is Markdown; hand the model the page, not the envelope.
         try {
@@ -172,7 +107,7 @@ const anysearch = {
         },
         additionalProperties: false,
       },
-      run: ({ cfg, key, args, signal }) => callTool(cfg, key, 'get_sub_domains', args, signal),
+      run: ({ cfg, key, args, signal }) => send(cfg, key)('get_sub_domains', args, signal),
     },
 
     batch_search: {
@@ -190,7 +125,7 @@ const anysearch = {
         required: ['queries'],
         additionalProperties: false,
       },
-      run: ({ cfg, key, args, signal }) => callTool(cfg, key, 'batch_search', { queries: args.queries }, signal),
+      run: ({ cfg, key, args, signal }) => send(cfg, key)('batch_search', { queries: args.queries }, signal),
     },
 
     score: {
@@ -215,7 +150,7 @@ const anysearch = {
         required: ['feedbacks'],
         additionalProperties: false,
       },
-      run: ({ cfg, key, args, signal }) => callTool(cfg, key, 'score', { feedbacks: args.feedbacks }, signal),
+      run: ({ cfg, key, args, signal }) => send(cfg, key)('score', { feedbacks: args.feedbacks }, signal),
     },
   },
 }

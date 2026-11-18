@@ -4,6 +4,9 @@
 # `tools` is a per-tool switch keyed by the public name (`<provider>_<tool>`).
 # Provider settings stay under `providers.<id>`; secrets never appear here,
 # only `keyRef` names a credential in the harness credential store.
+#
+# Every provider below works without a key. A key raises the rate limit, and
+# `firecrawl_search` is the one tool that still requires one.
 - insert:
     - id: web-hub
       name: dsh-web-hub
@@ -17,9 +20,33 @@
             consoleURL: 'https://www.anysearch.com/console/api-keys'
             maxResults: 8
             timeoutMs: 30000
+          exa:
+            baseURL: 'https://mcp.exa.ai/mcp'
+            keyRef: EXA_API_KEY
+            consoleURL: 'https://dashboard.exa.ai/api-keys'
+            maxResults: 8
+            timeoutMs: 30000
+          firecrawl:
+            baseURL: 'https://mcp.firecrawl.dev/v2/mcp'
+            keyRef: FIRECRAWL_API_KEY
+            consoleURL: 'https://www.firecrawl.dev/app/api-keys'
+            maxResults: 8
+            timeoutMs: 60000
+          tavily:
+            baseURL: 'https://mcp.tavily.com/mcp/'
+            keyRef: TAVILY_API_KEY
+            consoleURL: 'https://app.tavily.com'
+            maxResults: 8
+            timeoutMs: 30000
         tools:
           anysearch_search: true
           anysearch_extract: true
           anysearch_get_sub_domains: false
           anysearch_batch_search: false
           anysearch_score: false
+          exa_search: true
+          exa_extract: true
+          firecrawl_search: false
+          firecrawl_extract: true
+          tavily_search: true
+          tavily_extract: true

@@ -10,7 +10,7 @@
  * @property {string} title Display name used in errors and the tool list.
  * @property {boolean} [keyRequired] True when the provider cannot run without a
  *   credential. Default false: a configured-but-missing key falls back to
- *   anonymous access instead of failing the call.
+ *   anonymous or keyless access instead of failing the call.
  * @property {Record<string, AdapterTool>} tools Tools this provider owns.
  *
  * @typedef {object} AdapterTool
@@ -21,7 +21,13 @@
  */
 
 import anysearch from './anysearch.js'
+import exa from './exa.js'
+import firecrawl from './firecrawl.js'
+import tavily from './tavily.js'
 
 export const adapters = {
   [anysearch.id]: anysearch,
+  [exa.id]: exa,
+  [firecrawl.id]: firecrawl,
+  [tavily.id]: tavily,
 }

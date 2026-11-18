@@ -2,13 +2,11 @@ import { adapters } from './adapters/index.js'
 import { DEFAULTS } from './config.js'
 
 /**
- * One rule for the whole plugin: a tool is visible exactly when its switch is
- * on. A tool with no stored switch falls back to the adapter's own default, so
- * a newly added tool needs no config edit.
+ * Provider tools are opt-in: a tool is visible only when its switch is true,
+ * so installing this plugin never adds a tool the user did not ask for.
  */
-export function visible(settings, name, defaultOn) {
-  const value = settings.tools()[name]
-  return typeof value === 'boolean' ? value : defaultOn === true
+export function visible(settings, name) {
+  return settings.tools()[name] === true
 }
 
 /** Public name of one adapter tool: `<provider>_<tool>`, unique across providers. */
@@ -79,7 +77,7 @@ export function toolCatalog(ctx, settings) {
       const name = publicName(adapter, tool)
       return {
         definition: definition(ctx, adapter, spec, name, settings),
-        when: () => visible(settings, name, spec.defaultOn),
+        when: () => visible(settings, name),
       }
     })
   ))

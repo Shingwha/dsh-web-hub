@@ -58,7 +58,6 @@ const tavily = {
   },
   tools: {
     search: {
-      defaultOn: true,
       description:
         'Search the web with Tavily and return ranked results with title, URL, and a content excerpt. '
         + 'Use one focused query per call.',
@@ -89,7 +88,6 @@ const tavily = {
     },
 
     extract: {
-      defaultOn: true,
       description: 'Extract the main content of one web page with Tavily and return it as Markdown.',
       parameters: {
         type: 'object',

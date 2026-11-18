@@ -40,7 +40,6 @@ const firecrawl = {
   },
   tools: {
     search: {
-      defaultOn: false,
       description:
         'Search the web with Firecrawl and return results with title, URL, and description. '
         + 'Anonymous search is heavily rate limited; configure an API key for regular use.',
@@ -80,7 +79,6 @@ const firecrawl = {
     },
 
     extract: {
-      defaultOn: true,
       description: 'Scrape one web page with Firecrawl and return its main content as Markdown.',
       parameters: {
         type: 'object',

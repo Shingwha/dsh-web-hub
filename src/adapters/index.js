@@ -14,7 +14,7 @@
  * @property {Record<string, AdapterTool>} tools Tools this provider owns.
  *
  * @typedef {object} AdapterTool
- * @property {boolean} [defaultOn] Mounted unless the `tools` switch says otherwise.
+ * @property {string} description Model-facing one-line description.
  * @property {string} description Model-facing description.
  * @property {object} parameters JSON Schema for the arguments.
  * @property {(input: { cfg: object, key?: string, args: any, signal: AbortSignal }) => Promise<string>} run

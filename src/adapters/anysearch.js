@@ -37,7 +37,6 @@ const anysearch = {
   },
   tools: {
     search: {
-      defaultOn: true,
       description:
         'Search the web and return relevant results with title and source URL. Use one intent per call; '
         + 'for independent questions call anysearch_batch_search instead.',
@@ -72,7 +71,6 @@ const anysearch = {
     },
 
     extract: {
-      defaultOn: true,
       description: 'Fetch one web page and return its content as Markdown. Only HTML pages are supported; content past 50,000 characters is truncated.',
       parameters: {
         type: 'object',
@@ -99,7 +97,6 @@ const anysearch = {
     },
 
     get_sub_domains: {
-      defaultOn: false,
       description: 'List the vertical domains and sub-domains a domain search accepts, with their parameter definitions. Call this before any search that sets a domain.',
       parameters: {
         type: 'object',
@@ -116,7 +113,6 @@ const anysearch = {
     },
 
     batch_search: {
-      defaultOn: false,
       description: 'Run 1-5 independent searches in parallel and return all their results. Each query follows the anysearch_search argument shape.',
       parameters: {
         type: 'object',
@@ -134,7 +130,6 @@ const anysearch = {
     },
 
     score: {
-      defaultOn: false,
       description: 'Submit quality feedback for earlier search results. Optional; every entry names a request id returned with those results.',
       parameters: {
         type: 'object',

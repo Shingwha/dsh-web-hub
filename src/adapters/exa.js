@@ -25,7 +25,6 @@ const exa = {
   },
   tools: {
     search: {
-      defaultOn: true,
       description:
         'Search the web with Exa and return results with title, URL, and page highlights. '
         + 'Use one focused query per call.',
@@ -49,7 +48,6 @@ const exa = {
     },
 
     extract: {
-      defaultOn: true,
       description: 'Fetch pages with Exa and return their text content. Accepts one URL.',
       parameters: {
         type: 'object',

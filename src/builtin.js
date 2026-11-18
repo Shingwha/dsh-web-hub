@@ -1,5 +1,3 @@
-import { visible } from './tools.js'
-
 /**
  * The built-in web tools belong to the agent preset, so this plugin cannot
  * unregister them. It masks each one per agent while its switch is off, and
@@ -18,7 +16,10 @@ const REASON =
 
 /** @returns a disposer that lifts the guard and every mask. */
 export function applyBuiltinSwitches(ctx, settings) {
-  const denied = () => BUILTINS.filter((name) => !visible(settings, name, false))
+  // Built-ins are the opposite default: on unless the user switched one off, so
+  // installing this plugin never removes a tool that already worked.
+  const enabled = (name) => settings.tools()[name] !== false
+  const denied = () => BUILTINS.filter((name) => !enabled(name))
 
   const stopGuard = ctx.tools.guard((exec) => (denied().includes(exec.name) ? REASON : undefined))
   const agents = new Map()

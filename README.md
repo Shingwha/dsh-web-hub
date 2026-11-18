@@ -38,24 +38,24 @@ npm pack
 
 ## 装好之后
 
-- 模型多出 7 个工具：`anysearch_search`、`anysearch_extract`、`exa_search`、`exa_extract`、`tavily_search`、`tavily_extract`、`firecrawl_extract`
-- DSH 自带的 `web_search` / `web_fetch` 默认**关闭**，避免两套搜索并存
+- **什么都不变**：内置的 `web_search` / `web_fetch` 保持开启，插件不擅自接管
+- 所有来源工具默认**关闭**，想用哪个就打开哪个
 
-不想要哪些就关掉哪些，全都关掉也不会出错。
+这样安装不会让你原有的搜索/抓取失效；需要更强的来源时再逐项打开。
 
 ## 配置
 
 打开 **Plugins → dsh-web-hub**，界面按来源分组：
 
 ```
-工具                                       7/13
+工具                                       2/13
 内置
-  web_search      [ ]    web_fetch      [ ]
+  web_search      [✓]    web_fetch      [✓]
 AnySearch        已配置密钥
-  anysearch_search [✓]   anysearch_extract [✓]
+  anysearch_search [ ]   anysearch_extract [ ]
   密钥 ANYSEARCH_API_KEY · 已配置   获取 API Key  [清除]
 Exa              未配置密钥
-  exa_search      [✓]    exa_extract   [✓]
+  exa_search      [ ]    exa_extract   [ ]
   密钥 EXA_API_KEY · 未配置        获取 API Key  [____] [保存]
 …
 ```

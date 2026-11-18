@@ -42,16 +42,18 @@
             maxResults: 8
             timeoutMs: 60000
         tools:
-          web_search: false
-          web_fetch: false
-          anysearch_search: true
-          anysearch_extract: true
+          # Built-ins stay on: installing this plugin must not remove a tool
+          # the model could already use. Everything else is opt-in.
+          web_search: true
+          web_fetch: true
+          anysearch_search: false
+          anysearch_extract: false
           anysearch_get_sub_domains: false
           anysearch_batch_search: false
           anysearch_score: false
-          exa_search: true
-          exa_extract: true
-          tavily_search: true
-          tavily_extract: true
+          exa_search: false
+          exa_extract: false
+          tavily_search: false
+          tavily_extract: false
           firecrawl_search: false
-          firecrawl_extract: true
+          firecrawl_extract: false

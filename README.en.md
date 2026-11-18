@@ -39,26 +39,25 @@ Do not select the plugin directory: pnpm installs a directory as a `link:` and t
 
 ## After installing
 
-- The model gains seven tools: `anysearch_search`, `anysearch_extract`, `exa_search`,
-  `exa_extract`, `tavily_search`, `tavily_extract`, `firecrawl_extract`.
-- The built-in `web_search` / `web_fetch` are **off** by default, so two search stacks
-  do not compete.
+- **Nothing changes**: the built-in `web_search` / `web_fetch` stay on, and the plugin
+  does not take over.
+- Every provider tool starts **off**; turn on the ones you want.
 
-Turn off whatever you do not want; turning everything off is fine too.
+Installing therefore never breaks the search and fetch you already had.
 
 ## Configuration
 
 Open **Plugins → dsh-web-hub**. The panel groups tools by provider:
 
 ```
-Tools                                       7/13
+Tools                                       2/13
 Built-in
-  web_search      [ ]    web_fetch      [ ]
+  web_search      [✓]    web_fetch      [✓]
 AnySearch        key set
-  anysearch_search [✓]   anysearch_extract [✓]
+  anysearch_search [ ]   anysearch_extract [ ]
   Key ANYSEARCH_API_KEY · key set      Get an API key  [Clear]
 Exa              no key
-  exa_search      [✓]    exa_extract   [✓]
+  exa_search      [ ]    exa_extract   [ ]
   Key EXA_API_KEY · no key             Get an API key  [____] [Save]
 …
 ```

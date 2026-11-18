@@ -47,26 +47,15 @@ Installing therefore never breaks the search and fetch you already had.
 
 ## Configuration
 
-Open **Plugins → dsh-web-hub**. The panel groups tools by provider:
+Open **Plugins → dsh-web-hub**. The panel groups tools by provider and shows the enabled count at the top. Each group lists the provider's API key first (when it needs one) and then the tools it provides. Each tool has a switch: on makes it callable on the model's next step; off removes it from the tool list and costs no tokens.
 
-```
-Tools                                       2/13
-Built-in
-  web_search      [✓]    web_fetch      [✓]
-AnySearch        key set
-  anysearch_search [ ]   anysearch_extract [ ]
-  Key ANYSEARCH_API_KEY · key set      Get an API key  [Clear]
-Exa              no key
-  exa_search      [ ]    exa_extract   [ ]
-  Key EXA_API_KEY · no key             Get an API key  [____] [Save]
-…
-```
+Keys are optional and live inside their provider group:
 
-- **Switch**: on means the model can call it on its next step; off removes it from the
-  tool list and costs no tokens.
-- **Key**: lives inside its provider group and is optional. Empty means anonymous or
-  keyless access; "Get an API key" opens the provider console.
-- Keys are stored in the local credential store; the config keeps only the reference name.
+1. Select **Get an API key** to open the provider console and copy a key.
+2. Paste it into the group's **API key** field and select **Save**. A configured provider shows a `set` tag.
+3. Save a new key to replace it, or select **Clear** to remove the credential from this machine.
+
+Keys are stored in the local credential store; the configuration keeps only the reference name. A provider that needs no key shows `keyless` beside its group title.
 
 ## Supported providers
 

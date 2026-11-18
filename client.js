@@ -4,87 +4,94 @@ window.__ModuleLoader__.load({
     const React = require('react')
     const h = React.createElement
     const UI = require('@deepseek-ai/dsh-client-ui-primitives')
-
     const NS = 'dsh-web-hub'
     const BUNDLE = 'dsh-web-hub'
+    // The Loader entry id is also the settings namespace of this row.
+    const SETTINGS = 'web-hub'
     const BUILTIN_PREFIX = 'web_'
 
     const zh = {
       tools: '工具',
       summary: '开关决定模型能看到哪些工具，来源只是分组。',
       builtin: '内置',
-      builtinHint: '由官方插件提供，关闭后从模型工具列表移除。',
-      keys: '密钥',
+      other: '其他',
+      emptyTools: '配置里没有工具开关。',
+      keys: 'API Key',
       getKey: '获取 API Key',
-      keyPlaceholder: '粘贴 Key',
+      keyRefHint: '凭据引用：{ref}',
       keySave: '保存',
       keyClear: '清除',
-      keySet: '已配置密钥',
-      keyUnset: '未配置密钥',
+      keySet: '已配置',
+      keyUnset: '未配置',
       keyFree: '免 key',
-      advanced: '扩展',
       reload: '重新读取',
-      loadError: '读取配置失败',
-      saveError: '保存失败',
-      conflict: '配置已被其它改动更新，已重新读取。',
+      loadError: '读取配置失败。',
+      saveError: '保存失败。',
+      conflict: '配置已被其他窗口修改，已重新读取。',
       loading: '读取中…',
+      renderError: '面板渲染出错：',
     }
 
     const en = {
       tools: 'Tools',
       summary: 'The switches decide what the model sees; a provider is only a group.',
       builtin: 'Built-in',
-      builtinHint: 'Shipped by the official plugins; turning one off removes it from the model.',
-      keys: 'Key',
+      other: 'Other',
+      emptyTools: 'This configuration has no tool switches.',
+      keys: 'API key',
       getKey: 'Get an API key',
-      keyPlaceholder: 'Paste a key',
+      keyRefHint: 'Credential reference: {ref}',
       keySave: 'Save',
       keyClear: 'Clear',
-      keySet: 'key set',
-      keyUnset: 'no key',
+      keySet: 'set',
+      keyUnset: 'not set',
       keyFree: 'keyless',
-      advanced: 'extended',
       reload: 'Reload',
-      loadError: 'Could not read the configuration',
-      saveError: 'Could not save',
+      loadError: 'Could not read the configuration.',
+      saveError: 'Could not save.',
       conflict: 'Configuration changed elsewhere; reloaded.',
       loading: 'Loading…',
+      renderError: 'The panel failed to render: ',
     }
 
     const STYLES = [
-      '.hub{display:flex;flex-direction:column;gap:14px;font-size:13px;color:var(--dsw-alias-text-l1)}',
-      '.hub-card{border:1px solid var(--dsw-alias-border-l2);border-radius:10px}',
-      '.hub-card-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:12px 16px;border-bottom:1px solid var(--dsw-alias-border-l2)}',
-      '.hub-card-title{font-weight:600}',
-      '.hub-group{border-top:1px solid var(--dsw-alias-border-l2)}',
-      '.hub-group:first-child{border-top:none}',
-      '.hub-group-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 16px;background:var(--dsw-alias-bg-layer-2)}',
-      '.hub-group-name{font-weight:600}',
-      '.hub-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 16px}',
-      '.hub-row+.hub-row{border-top:1px solid var(--dsw-alias-border-l2)}',
-      '.hub-name{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px}',
-      '.hub-hint{color:var(--dsw-alias-text-l3);font-size:12px;line-height:1.45}',
-      '.hub-mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;color:var(--dsw-alias-text-l3)}',
-      '.hub-side{display:flex;align-items:center;gap:8px;flex:none}',
-      '.hub-link{color:var(--dsw-alias-brand-primary);text-decoration:none;white-space:nowrap}',
-      '.hub-link:hover{text-decoration:underline}',
-      '.hub-key{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 16px;border-bottom:1px dashed var(--dsw-alias-border-l2)}',
-      '.hub-key-main{display:flex;align-items:center;gap:8px;min-width:0;flex-wrap:wrap}',
-      '.hub-foot{display:flex;align-items:center;justify-content:space-between;gap:10px}',
-      '.hub-error{font-size:12px;color:var(--dsw-alias-state-error-primary,#d33)}',
+      '.wh{display:flex;flex-direction:column;gap:24px;color:var(--dsw-alias-label-primary)}',
+      '.wh-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px}',
+      '.wh-title{margin:0;font-size:14px;font-weight:500;line-height:20px}',
+      '.wh-summary{margin:4px 0 0;font-size:12px;line-height:1.5;color:var(--dsw-alias-label-tertiary)}',
+      '.wh-count{font-size:12px;line-height:1.5;color:var(--dsw-alias-label-tertiary);font-variant-numeric:tabular-nums}',
+      '.wh-group{display:flex;flex-direction:column}',
+      '.wh-group-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px}',
+      '.wh-group-name{font-size:14px;font-weight:500;line-height:20px}',
+      '.wh-panel{padding:0 16px;border-radius:var(--dsw-radius-md);background:var(--dsw-alias-bg-module-platform)}',
+      '.wh-panel>*+*{border-top:0.5px solid var(--dsw-alias-border-l2)}',
+      '.wh-row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 0}',
+      '.wh-name{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px;line-height:1.5}',
+      '.wh-hint{margin:0;font-size:12px;line-height:1.5;color:var(--dsw-alias-label-tertiary)}',
+      '.wh-key-actions{display:flex;align-items:center;gap:8px;padding:0 0 12px;flex-wrap:wrap}',
+      '.wh-link{color:var(--dsw-alias-link);text-decoration:none;font-size:12px;line-height:1.5}',
+      '.wh-foot{display:flex;align-items:center;justify-content:space-between;gap:12px}',
+      '.wh-error{margin:0;font-size:12px;line-height:1.5;color:var(--dsw-alias-state-error-primary)}',
+      '@media (hover:hover){.wh-link:hover{text-decoration:underline}}',
     ].join('')
 
-    function row(name, hint, children) {
-      return h('div', { className: 'hub-row', key: name },
-        h('div', { className: 'hub-side', style: { flex: '1 1 auto', minWidth: 0 } },
-          h('span', { className: 'hub-name' }, name),
-          hint || null),
-        h('div', { className: 'hub-side' }, children))
-    }
+    // ── Small shared helpers ────────────────────────────────────────────────
 
-    function findNamespace(view) {
-      if (!view || !Array.isArray(view.namespaces)) return undefined
-      return view.namespaces.find((ns) => typeof ns.ns === 'string' && ns.ns.indexOf('web-hub') !== -1)
+    /** Minimal external store: the slot runtime reads it through getSnapshot/subscribe. */
+    function createStore(initial) {
+      let snapshot = initial
+      const listeners = new Set()
+      return {
+        getSnapshot: () => snapshot,
+        subscribe(listener) {
+          listeners.add(listener)
+          return () => { listeners.delete(listener) }
+        },
+        set(next) {
+          snapshot = next
+          for (const listener of listeners) listener()
+        },
+      }
     }
 
     function message(error) {
@@ -94,198 +101,178 @@ window.__ModuleLoader__.load({
       try { return JSON.stringify(error) } catch { return String(error) }
     }
 
-    /** Every keyRef in the config, deduplicated. */
+    /** A tool's effective switch: built-ins are on unless explicitly off, provider tools off unless on. */
+    function enabled(name, tools) {
+      return name.startsWith(BUILTIN_PREFIX) ? tools[name] !== false : tools[name] === true
+    }
+
+    /** Every credential reference in the config, deduplicated and trimmed. */
     function keyRefs(providers) {
       const refs = new Set()
       for (const provider of Object.values(providers)) {
-        if (provider && typeof provider.keyRef === 'string' && provider.keyRef.length > 0) refs.add(provider.keyRef)
+        const ref = typeof provider?.keyRef === 'string' ? provider.keyRef.trim() : ''
+        if (ref !== '') refs.add(ref)
       }
       return [...refs]
     }
 
-    /** Group tool names: the built-ins first, then each provider in config order. */
+    /** Built-ins first, then each provider in config order, then unclaimed tools. */
     function groups(tools, providers) {
       const ids = Object.keys(providers)
       const builtin = []
-      const byProvider = new Map(ids.map((id) => [id, []]))
-      const stray = []
-
+      const byProvider = new Map(ids.map(id => [id, []]))
+      const other = []
       for (const name of Object.keys(tools)) {
         if (name.startsWith(BUILTIN_PREFIX)) { builtin.push(name); continue }
-        const owner = ids.find((id) => name.startsWith(`${id}_`))
-        if (owner === undefined) stray.push(name)
+        const owner = ids.find(id => name.startsWith(`${id}_`))
+        if (owner === undefined) other.push(name)
         else byProvider.get(owner).push(name)
       }
-
-      const out = [{ id: 'builtin', names: builtin }]
+      const out = []
+      if (builtin.length > 0) out.push({ id: 'builtin', names: builtin })
       for (const id of ids) {
         const names = byProvider.get(id)
         if (names.length > 0) out.push({ id, names })
       }
-      if (stray.length > 0) out.push({ id: 'other', names: stray })
-      return out.filter((group) => group.names.length > 0)
+      if (other.length > 0) out.push({ id: 'other', names: other })
+      return out
     }
 
-    function useHub(remote, t) {
-      const [state, setState] = React.useState(undefined)
-      const [keys, setKeys] = React.useState({})
-      const [busy, setBusy] = React.useState(false)
-      const [error, setError] = React.useState(null)
-      const position = React.useRef({ ns: undefined, revision: undefined })
-      const queue = React.useRef(Promise.resolve())
+    // ── Controller ──────────────────────────────────────────────────────────
 
-      const load = React.useCallback(() => {
-        let cancelled = false
-        setError(null)
-        Promise.resolve()
-          .then(() => remote.settings.describe())
-          .then(async (described) => {
-            if (cancelled) return
-            if (described && described.ok === false) {
-              setError(message(described.error) || t('loadError'))
-              return
-            }
-            const ns = findNamespace(described && described.ok ? described.value : undefined)
-            if (ns === undefined) { setError(t('loadError')); return }
-            const value = ns.value && typeof ns.value === 'object' ? ns.value : {}
-            position.current = { ns: ns.ns, revision: ns.revision }
-            setState({ value })
+    /**
+     * Owns the settings snapshot, the writes, and the credential status. The
+     * React tree below only renders this snapshot and calls these actions.
+     */
+    class HubController {
+      constructor(ctx, t) {
+        this.ctx = ctx
+        this.t = t
+        this.disposed = false
+        this.loadSequence = 0
+        this.state = { status: 'loading', error: null, value: undefined, revision: undefined, keys: {}, busy: false }
+        this.store = createStore(this.state)
+        void this.load()
+      }
 
-            const refs = keyRefs(value.providers || {})
-            if (refs.length === 0) { setKeys({}); return }
-            const status = await remote.credentials.describe(refs)
-            if (cancelled) return
-            const map = status && status.ok && status.value && typeof status.value === 'object' ? status.value : {}
-            const next = {}
-            for (const ref of refs) next[ref] = map[ref]?.configured === true
-            setKeys(next)
-          })
-          .catch((reason) => { if (!cancelled) setError(message(reason) || t('loadError')) })
-        return () => { cancelled = true }
-      }, [remote, t])
+      set(patch) {
+        this.state = { ...this.state, ...patch }
+        this.store.set(this.state)
+      }
 
-      React.useEffect(() => load(), [])
-
-      const send = (patch) => {
-        queue.current = queue.current.then(async () => {
-          const { ns, revision } = position.current
-          if (ns === undefined) return
-          const result = await remote.settings.update(ns, patch, revision)
-          if (result && result.ok === false) {
-            setError(result.error && result.error.code === 'settings/conflict'
-              ? t('conflict')
-              : (message(result.error) || t('saveError')))
-            load()
+      async load() {
+        if (this.disposed) return
+        const sequence = ++this.loadSequence
+        this.set(this.state.value === undefined ? { status: 'loading', error: null } : { error: null })
+        try {
+          const described = await this.ctx.remote.settings.describe()
+          if (this.disposed || sequence !== this.loadSequence) return
+          if (!described.ok) {
+            this.set({ status: this.state.value === undefined ? 'error' : 'ready', error: message(described.error) || this.t('loadError') })
             return
           }
-          const next = result && result.ok ? result.value : undefined
-          if (next === undefined || next.revision === undefined) return
-          position.current = { ns, revision: next.revision }
-          if (next.value !== undefined) setState({ value: next.value })
-        }).catch((reason) => setError(message(reason) || t('saveError')))
-      }
-
-      const toggle = (tools, name, on) => {
-        setError(null)
-        const next = { ...tools, [name]: on }
-        setState((current) => (current === undefined ? current : { value: { ...current.value, tools: next } }))
-        send({ tools: next })
-      }
-
-      const writeKey = (ref, value, clear) => {
-        if (busy) return
-        setBusy(true)
-        setError(null)
-        const task = clear
-          ? remote.credentials.unset(ref)
-          : remote.credentials.set(ref, value)
-        Promise.resolve()
-          .then(() => task)
-          .then(() => load())
-          .catch((reason) => setError(message(reason) || t('saveError')))
-          .finally(() => setBusy(false))
-      }
-
-      return { state, keys, busy, error, load, toggle, writeKey }
-    }
-
-    function KeyLine(props) {
-      const { t, keyRef, configured, busy, onSave, onClear, consoleURL } = props
-      const [draft, setDraft] = React.useState('')
-
-      return h('div', { className: 'hub-key' },
-        h('div', { className: 'hub-key-main' },
-          h('span', { className: 'hub-hint' }, t('keys')),
-          h('span', { className: 'hub-mono' }, keyRef),
-          h('span', { className: 'hub-hint' }, configured ? t('keySet') : t('keyUnset')),
-          consoleURL.length > 0
-            ? h('a', { className: 'hub-link', href: consoleURL, target: '_blank', rel: 'noreferrer noopener' }, t('getKey'))
-            : null),
-        h('div', { className: 'hub-side' },
-          h(UI.Input, {
-            type: 'password',
-            value: draft,
-            placeholder: t('keyPlaceholder'),
-            disabled: busy,
-            onChange: (event) => setDraft(event.target.value),
-          }),
-          h(UI.Button, {
-            variant: 'outline',
-            size: 'sm',
-            disabled: busy || draft.trim().length === 0,
-            onClick: () => { onSave(draft.trim()); setDraft('') },
-          }, t('keySave')),
-          configured
-            ? h(UI.Button, { variant: 'outline', size: 'sm', disabled: busy, onClick: onClear }, t('keyClear'))
-            : null))
-    }
-
-    function Group(props) {
-      const { t, group, tools, providers, keys, busy, onToggle, onKey } = props
-      const provider = group.id === 'builtin' || group.id === 'other' ? undefined : providers[group.id]
-      const title = group.id === 'builtin'
-        ? t('builtin')
-        : (provider && typeof provider.title === 'string' && provider.title.length > 0
-          ? provider.title
-          : group.id.charAt(0).toUpperCase() + group.id.slice(1))
-      const keyRef = provider && typeof provider.keyRef === 'string' ? provider.keyRef : ''
-      const configured = keys[keyRef] === true
-      const consoleURL = provider && typeof provider.consoleURL === 'string' ? provider.consoleURL : ''
-
-      const status = group.id === 'builtin'
-        ? t('builtinHint')
-        : keyRef.length === 0
-          ? t('keyFree')
-          : (configured ? t('keySet') : t('keyUnset'))
-
-      return h('div', { className: 'hub-group' },
-        h('div', { className: 'hub-group-head' },
-          h('span', { className: 'hub-group-name' }, title),
-          h('span', { className: 'hub-hint' }, status)),
-        keyRef.length > 0
-          ? h(KeyLine, {
-            t,
-            keyRef,
-            configured,
-            busy,
-            consoleURL,
-            onSave: (value) => onKey(keyRef, value, false),
-            onClear: () => onKey(keyRef, '', true),
+          const namespaces = Array.isArray(described.value?.namespaces) ? described.value.namespaces : []
+          const view = namespaces.find(candidate => candidate.ns === SETTINGS)
+          if (view === undefined) {
+            this.set({ status: this.state.value === undefined ? 'error' : 'ready', error: this.t('loadError') })
+            return
+          }
+          const value = view.value && typeof view.value === 'object' ? view.value : {}
+          const refs = keyRefs(value.providers || {})
+          const keys = refs.length === 0 ? {} : await this.readKeys(refs)
+          if (this.disposed || sequence !== this.loadSequence) return
+          this.set({
+            status: 'ready',
+            error: null,
+            value,
+            revision: view.revision,
+            keys: keys === undefined ? this.state.keys : keys,
           })
-          : null,
-        group.names.map((name) => row(name,
-          name.indexOf('_') > 0 && /_(get_sub_domains|batch_search|score)$/.test(name)
-            ? h(UI.Tag, { tone: 'neutral' }, t('advanced'))
-            : null,
-          h(UI.Switch, {
-            checked: tools[name] === true,
-            label: name,
-            disabled: busy,
-            onChange: (next) => onToggle(tools, name, next),
-          }))))
+        } catch (reason) {
+          if (this.disposed || sequence !== this.loadSequence) return
+          this.set({ status: this.state.value === undefined ? 'error' : 'ready', error: message(reason) || this.t('loadError') })
+        }
+      }
+
+      async toggle(name, on) {
+        const current = this.state
+        if (current.status !== 'ready' || current.busy) return
+        const tools = { ...(current.value.tools || {}), [name]: on }
+        this.set({ busy: true, error: null, value: { ...current.value, tools } })
+        try {
+          const result = await this.ctx.remote.settings.mutate(
+            SETTINGS,
+            [{ op: 'set', path: ['tools', name], value: on }],
+            current.revision,
+          )
+          if (this.disposed) return
+          if (!result.ok) { await this.fail(result.error); return }
+          const view = result.value
+          this.set({
+            busy: false,
+            revision: view?.revision ?? current.revision,
+            value: view?.value ?? { ...current.value, tools },
+          })
+        } catch (reason) {
+          if (!this.disposed) await this.fail(reason)
+        }
+      }
+
+      async saveKey(ref, value) {
+        return await this.writeKey(ref, value, false)
+      }
+
+      async clearKey(ref) {
+        return await this.writeKey(ref, '', true)
+      }
+
+      async writeKey(ref, value, clear) {
+        if (this.state.busy) return false
+        this.set({ busy: true, error: null })
+        try {
+          const result = clear
+            ? await this.ctx.remote.credentials.unset(ref)
+            : await this.ctx.remote.credentials.set(ref, value)
+          if (result && result.ok === false) {
+            this.set({ busy: false, error: message(result.error) || this.t('saveError') })
+            return false
+          }
+          if (this.disposed) return false
+          this.set({ busy: false, keys: { ...this.state.keys, [ref]: !clear } })
+          return true
+        } catch (reason) {
+          if (!this.disposed) this.set({ busy: false, error: message(reason) || this.t('saveError') })
+          return false
+        }
+      }
+
+      async readKeys(refs) {
+        if (this.disposed) return undefined
+        try {
+          const status = await this.ctx.remote.credentials.describe(refs)
+          if (this.disposed || !status.ok) return undefined
+          const keys = {}
+          for (const ref of refs) keys[ref] = status.value?.[ref]?.configured === true
+          return keys
+        } catch {
+          return undefined
+        }
+      }
+
+      async fail(error) {
+        const conflict = error?.code === 'settings/conflict'
+        await this.load()
+        if (this.disposed) return
+        this.set({ busy: false, error: conflict ? this.t('conflict') : (message(error) || this.t('saveError')) })
+      }
+
+      dispose() {
+        this.disposed = true
+      }
     }
 
-    /** Surfaces a render crash instead of letting React drop the whole card. */
+    // ── React tree ──────────────────────────────────────────────────────────
+
     class Boundary extends React.Component {
       constructor(props) {
         super(props)
@@ -297,59 +284,142 @@ window.__ModuleLoader__.load({
       }
 
       render() {
-        if (this.state.error !== null) {
-          return h('div', { className: 'hub-error' }, 'dsh-web-hub 渲染出错：' + String(this.state.error && this.state.error.message ? this.state.error.message : this.state.error))
-        }
-        return this.props.children
+        if (this.state.error === null) return this.props.children
+        return h('p', { className: 'wh-error' },
+          this.props.t('renderError') + String(this.state.error?.message ?? this.state.error))
       }
+    }
+
+    function KeyField(props) {
+      const { t, keyRef, configured, consoleURL, busy, onSave, onClear } = props
+      const id = React.useId()
+      const [draft, setDraft] = React.useState('')
+      return h('div', { className: 'wh-key' },
+        h(UI.SettingsSecretField, {
+          id,
+          label: t('keys'),
+          hint: t('keyRefHint', { ref: keyRef }),
+          text: draft,
+          configured,
+          stateLabel: configured ? t('keySet') : t('keyUnset'),
+          disabled: busy,
+          onEdit: setDraft,
+        }),
+        h('div', { className: 'wh-key-actions' },
+          consoleURL.length > 0
+            ? h('a', { className: 'wh-link', href: consoleURL, target: '_blank', rel: 'noreferrer noopener' }, t('getKey'))
+            : null,
+          h(UI.Button, {
+            variant: 'outline',
+            size: 'sm',
+            disabled: busy || draft.trim().length === 0,
+            onClick: async () => {
+              if (await onSave(keyRef, draft.trim())) setDraft('')
+            },
+          }, t('keySave')),
+          configured
+            ? h(UI.Button, {
+              variant: 'outline',
+              size: 'sm',
+              disabled: busy,
+              onClick: () => { void onClear(keyRef) },
+            }, t('keyClear'))
+            : null))
+    }
+
+    function ToolRow(props) {
+      const { name, checked, busy, onToggle } = props
+      return h('div', { className: 'wh-row' },
+        h('span', { className: 'wh-name' }, name),
+        h(UI.Switch, {
+          checked,
+          label: name,
+          disabled: busy,
+          onChange: next => onToggle(name, next),
+        }))
+    }
+
+    function ProviderSection(props) {
+      const { t, group, tools, providers, keys, busy, onToggle, onSaveKey, onClearKey } = props
+      const provider = group.id === 'builtin' || group.id === 'other' ? undefined : providers[group.id]
+      const keyRef = typeof provider?.keyRef === 'string' ? provider.keyRef.trim() : ''
+      const consoleURL = typeof provider?.consoleURL === 'string' ? provider.consoleURL.trim() : ''
+      const title = group.id === 'builtin'
+        ? t('builtin')
+        : group.id === 'other'
+          ? t('other')
+          : (typeof provider?.title === 'string' && provider.title.trim().length > 0 ? provider.title.trim() : group.id)
+      return h('section', { className: 'wh-group' },
+        h('div', { className: 'wh-group-head' },
+          h('span', { className: 'wh-group-name' }, title),
+          provider !== undefined && keyRef === '' ? h(UI.Tag, { tone: 'quiet' }, t('keyFree')) : null),
+        h('div', { className: 'wh-panel' },
+          keyRef.length > 0
+            ? h(KeyField, {
+              key: keyRef,
+              t,
+              keyRef,
+              configured: keys[keyRef] === true,
+              consoleURL,
+              busy,
+              onSave: onSaveKey,
+              onClear: onClearKey,
+            })
+            : null,
+          group.names.map(name => h(ToolRow, {
+            key: name,
+            name,
+            checked: enabled(name, tools),
+            busy,
+            onToggle,
+          }))))
     }
 
     function PanelInner(props) {
-      const { remote, t } = props
-      const hub = useHub(remote, t)
-
-      if (hub.state === undefined) {
-        return h('div', { className: 'hub' },
-          hub.error === null
-            ? h('span', { className: 'hub-hint' }, t('loading'))
-            : h('div', { className: 'hub-side' },
-              h('span', { className: 'hub-error' }, hub.error),
-              h(UI.Button, { variant: 'outline', size: 'sm', onClick: hub.load }, t('reload'))))
+      const { t } = props
+      const state = props.useWebHub(snapshot => snapshot)
+      if (state.status === 'loading') {
+        return h('div', { className: 'wh' }, h('p', { className: 'wh-hint' }, t('loading')))
       }
-
-      const value = hub.state.value
-      const tools = value.tools || {}
-      const providers = value.providers || {}
+      if (state.status === 'error') {
+        return h('div', { className: 'wh' },
+          h('p', { className: 'wh-error' }, state.error || t('loadError')),
+          h(UI.Button, { variant: 'outline', size: 'sm', onClick: props.reload }, t('reload')))
+      }
+      const value = state.value ?? {}
+      const tools = value.tools ?? {}
+      const providers = value.providers ?? {}
       const names = Object.keys(tools)
-      const on = names.filter((name) => tools[name] === true).length
-
-      return h('div', { className: 'hub' },
-        h('section', { className: 'hub-card' },
-          h('div', { className: 'hub-card-head' },
-            h('div', null,
-              h('div', { className: 'hub-card-title' }, t('tools')),
-              h('div', { className: 'hub-hint' }, t('summary'))),
-            h('span', { className: 'hub-hint' }, `${on}/${names.length}`)),
-          names.length === 0
-            ? h('div', { className: 'hub-row' }, h('span', { className: 'hub-hint' }, '配置里没有工具开关（tools 为空）'))
-            : groups(tools, providers).map((group) => h(Group, {
-              key: group.id,
-              t,
-              group,
-              tools,
-              providers,
-              keys: hub.keys,
-              busy: hub.busy,
-              onToggle: hub.toggle,
-              onKey: hub.writeKey,
-            }))),
-        h('div', { className: 'hub-foot' },
-          h('span', { className: 'hub-error' }, hub.error === null ? '' : hub.error),
-          h(UI.Button, { variant: 'outline', size: 'sm', onClick: hub.load }, t('reload'))))
+      const on = names.filter(name => enabled(name, tools)).length
+      return h('div', { className: 'wh' },
+        h('header', { className: 'wh-head' },
+          h('div', null,
+            h('h4', { className: 'wh-title' }, t('tools')),
+            h('p', { className: 'wh-summary' }, t('summary'))),
+          h('span', { className: 'wh-count' }, `${on}/${names.length}`)),
+        names.length === 0
+          ? h('p', { className: 'wh-hint' }, t('emptyTools'))
+          : groups(tools, providers).map(group => h(ProviderSection, {
+            key: group.id,
+            t,
+            group,
+            tools,
+            providers,
+            keys: state.keys,
+            busy: state.busy,
+            onToggle: props.toggle,
+            onSaveKey: props.saveKey,
+            onClearKey: props.clearKey,
+          })),
+        h('div', { className: 'wh-foot' },
+          h('span', { className: 'wh-error' }, state.error ?? ''),
+          h(UI.Button, { variant: 'outline', size: 'sm', disabled: state.busy, onClick: props.reload }, t('reload'))))
     }
 
     function Panel(props) {
-      return h(React.Fragment, null, h('style', null, STYLES), h(Boundary, null, h(PanelInner, props)))
+      return h(React.Fragment, null,
+        h('style', null, STYLES),
+        h(Boundary, { t: props.t }, h(PanelInner, props)))
     }
 
     return {
@@ -357,12 +427,23 @@ window.__ModuleLoader__.load({
       apply(ctx) {
         ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'dsh-web-hub: dictionaries')
         const t = ctx.locale.bind(NS)
-        const face = () => ({ remote: ctx.remote, t })
+        const controller = new HubController(ctx, t)
+        ctx.effect(() => () => controller.dispose(), 'dsh-web-hub: controller')
+        ctx.effect(
+          () => ctx.on('connection/reset', () => { void controller.load() }),
+          'dsh-web-hub: reconnect refresh',
+        )
         ctx.slots.inject('plugins.bundle.config', () => ctx.slots.register({
           name: 'plugins.bundle.config',
           key: BUNDLE,
           locale: NS,
-          inject: face,
+          inject: () => ({
+            hooks: { webHub: controller.store },
+            toggle: (name, on) => controller.toggle(name, on),
+            saveKey: (ref, value) => controller.saveKey(ref, value),
+            clearKey: ref => controller.clearKey(ref),
+            reload: () => { void controller.load() },
+          }),
         }, Panel))
       },
     }

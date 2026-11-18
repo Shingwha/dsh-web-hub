@@ -18,97 +18,89 @@ window.__ModuleLoader__.load({
     }
 
     const zh = {
-      title: 'dsh-web-hub',
-      summary: '选择用哪个搜索/抓取服务，并决定开放哪些工具。',
       source: '来源',
-      sourceHint: '只有选中的来源会挂载工具。',
-      none: '未启用任何来源',
+      sourceHint: '同一时刻只有一个来源生效。',
+      none: '还没有可用的来源。',
       use: '设为当前',
       using: '使用中',
       disable: '关闭',
-      tools: '工具',
-      toolsHint: '没勾的工具不会出现在模型工具列表里。',
-      key: 'API Key',
-      keyHint: '可选。留空即匿名调用（限额较低），只存本机凭据库。',
-      keyPlaceholder: '粘贴 Key 后保存',
+      key: '密钥',
+      keyHint: '可选。留空即匿名调用，限额较低。',
+      keyPlaceholder: '粘贴 Key',
+      keySave: '保存',
+      keyClear: '清除',
       configured: '已配置',
-      missing: '未配置（匿名）',
-      clear: '清除',
-      save: '保存',
-      saving: '保存中…',
-      saved: '已保存，工具列表即时更新。',
+      missing: '未配置',
+      tools: '工具',
+      toolsHint: '没勾选的工具不会出现在模型工具列表里。',
+      toolsOff: '先选择一个来源，才能打开工具。',
+      advanced: '扩展',
       reload: '重新读取',
-      loadError: '读取配置失败。',
-      saveError: '保存被拒绝，已保留你的修改。',
-      conflict: '配置已被其他改动更新，请重新读取后再保存。',
-      tool_search: '网页搜索',
-      tool_extract: '抓取网页',
-      tool_get_sub_domains: '垂直领域目录',
-      tool_batch_search: '批量搜索',
-      tool_score: '质量反馈',
+      loadError: '读取配置失败',
+      saveError: '保存失败',
+      conflict: '配置已被其它改动更新，已重新读取。',
+      saved: '已生效',
+      applying: '应用中…',
     }
 
     const en = {
-      title: 'dsh-web-hub',
-      summary: 'Pick a search/fetch source and choose which of its tools the model gets.',
       source: 'Source',
-      sourceHint: 'Only the selected source mounts tools.',
-      none: 'No source enabled',
+      sourceHint: 'Exactly one source is active at a time.',
+      none: 'No source available.',
       use: 'Use',
       using: 'In use',
-      disable: 'Off',
+      disable: 'Turn off',
+      key: 'Key',
+      keyHint: 'Optional. Empty means anonymous calls at a lower rate limit.',
+      keyPlaceholder: 'Paste a key',
+      keySave: 'Save',
+      keyClear: 'Clear',
+      configured: 'set',
+      missing: 'not set',
       tools: 'Tools',
       toolsHint: 'Tools that are off never reach the model.',
-      key: 'API key',
-      keyHint: 'Optional. Empty means anonymous calls at lower limits. Stored in the local credential store.',
-      keyPlaceholder: 'Paste a key, then save',
-      configured: 'configured',
-      missing: 'not set (anonymous)',
-      clear: 'Clear',
-      save: 'Save',
-      saving: 'Saving…',
-      saved: 'Saved; the tool list updates immediately.',
+      toolsOff: 'Pick a source before turning tools on.',
+      advanced: 'extended',
       reload: 'Reload',
-      loadError: 'Could not read the configuration.',
-      saveError: 'The deployment rejected these values; your edits were kept.',
-      conflict: 'The configuration changed elsewhere; reload and save again.',
-      tool_search: 'Web search',
-      tool_extract: 'Fetch page',
-      tool_get_sub_domains: 'Vertical domains',
-      tool_batch_search: 'Batch search',
-      tool_score: 'Quality feedback',
+      loadError: 'Could not read the configuration',
+      saveError: 'Could not save',
+      conflict: 'Configuration changed elsewhere; reloaded.',
+      saved: 'Applied',
+      applying: 'Applying…',
     }
 
     const STYLES = [
-      '.hub{display:flex;flex-direction:column;gap:16px;font-size:13px;color:var(--dsw-alias-text-l1)}',
-      '.hub-head{display:flex;flex-direction:column;gap:4px}',
-      '.hub-title{font-size:14px;font-weight:600}',
-      '.hub-sub{color:var(--dsw-alias-text-l3);line-height:1.5}',
-      '.hub-card{border:1px solid var(--dsw-alias-border-l2);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:12px}',
-      '.hub-card-head{display:flex;flex-direction:column;gap:2px}',
+      '.hub{display:flex;flex-direction:column;gap:14px;font-size:13px;color:var(--dsw-alias-text-l1)}',
+      '.hub-card{border:1px solid var(--dsw-alias-border-l2);border-radius:10px}',
+      '.hub-card-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 16px;border-bottom:1px solid var(--dsw-alias-border-l2)}',
       '.hub-card-title{font-weight:600}',
+      '.hub-card-body{display:flex;flex-direction:column}',
       '.hub-hint{color:var(--dsw-alias-text-l3);font-size:12px;line-height:1.45}',
-      '.hub-row{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:28px}',
-      '.hub-row-main{display:flex;flex-direction:column;gap:2px;min-width:0}',
+      '.hub-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 16px;min-height:20px}',
+      '.hub-row+.hub-row{border-top:1px solid var(--dsw-alias-border-l2)}',
+      '.hub-row-main{display:flex;flex-direction:column;gap:3px;min-width:0}',
+      '.hub-label{display:flex;align-items:center;gap:8px}',
       '.hub-mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;color:var(--dsw-alias-text-l3)}',
-      '.hub-inline{display:flex;align-items:center;gap:8px;flex:none}',
-      '.hub-actions{display:flex;align-items:center;gap:8px;padding-top:2px}',
-      '.hub-status{font-size:12px;color:var(--dsw-alias-text-l3)}',
+      '.hub-side{display:flex;align-items:center;gap:8px;flex:none}',
+      '.hub-foot{display:flex;align-items:center;justify-content:space-between;gap:10px}',
       '.hub-error{font-size:12px;color:var(--dsw-alias-state-error-primary,#d33)}',
+      '.hub-status{font-size:12px;color:var(--dsw-alias-text-l3)}',
     ].join('')
 
-    function Row(props) {
+    function Line(props) {
       return h('div', { className: 'hub-row' },
-        h('div', { className: 'hub-row-main' }, props.title, props.hint ? h('span', { className: 'hub-hint' }, props.hint) : null),
-        props.children)
+        h('div', { className: 'hub-row-main' },
+          h('div', { className: 'hub-label' }, props.title, props.tag || null),
+          props.hint ? h('span', { className: 'hub-hint' }, props.hint) : null),
+        h('div', { className: 'hub-side' }, props.children))
     }
 
-    function Section(props) {
+    function Card(props) {
       return h('section', { className: 'hub-card' },
         h('div', { className: 'hub-card-head' },
           h('span', { className: 'hub-card-title' }, props.title),
-          props.hint ? h('span', { className: 'hub-hint' }, props.hint) : null),
-        props.children)
+          props.side || null),
+        h('div', { className: 'hub-card-body' }, props.children))
     }
 
     function findNamespace(view) {
@@ -125,25 +117,18 @@ window.__ModuleLoader__.load({
 
     function PanelInner(props) {
       const { remote, t } = props
-      const [view, setView] = React.useState(undefined)
-      const [draft, setDraft] = React.useState(undefined)
+      const [state, setState] = React.useState(undefined)
       const [keyDraft, setKeyDraft] = React.useState('')
       const [keyState, setKeyState] = React.useState(undefined)
       const [busy, setBusy] = React.useState(false)
       const [error, setError] = React.useState(null)
-      const [notice, setNotice] = React.useState(null)
-
-      const keyRefOf = (value) => {
-        const providers = (value && value.providers) || {}
-        const active = (value && typeof value.active === 'string') ? value.active : ''
-        const provider = providers[active] || {}
-        return typeof provider.keyRef === 'string' ? provider.keyRef : ''
-      }
+      const queue = React.useRef(Promise.resolve())
+      /** Latest namespace and revision, read when a queued write runs. */
+      const position = React.useRef({ ns: undefined, revision: undefined })
 
       const load = React.useCallback(() => {
         let cancelled = false
         setError(null)
-        setKeyDraft('')
         Promise.resolve()
           .then(() => remote.settings.describe())
           .then(async (described) => {
@@ -158,9 +143,10 @@ window.__ModuleLoader__.load({
               return
             }
             const value = ns.value && typeof ns.value === 'object' ? ns.value : {}
-            setView({ ns: ns.ns, value, revision: ns.revision })
-            setDraft(JSON.parse(JSON.stringify(value)))
-            const ref = keyRefOf(value)
+            position.current = { ns: ns.ns, revision: ns.revision }
+            setState({ ns: ns.ns, value, revision: ns.revision })
+            const provider = (value.providers || {})[value.active || ''] || {}
+            const ref = typeof provider.keyRef === 'string' ? provider.keyRef : ''
             if (ref.length === 0) { setKeyState(undefined); return }
             const status = await remote.credentials.describe([ref])
             if (cancelled) return
@@ -173,132 +159,153 @@ window.__ModuleLoader__.load({
 
       React.useEffect(() => load(), [])
 
-      if (view === undefined) {
+      // Switches apply immediately, like every other switch in the product.
+      // Writes serialize and each reads the latest revision, so two quick
+      // toggles cannot race.
+      const apply = (patch, optimistic) => {
+        setError(null)
+        setState((current) => (current === undefined
+          ? current
+          : { ...current, value: { ...current.value, ...optimistic } }))
+        queue.current = queue.current
+          .then(async () => {
+            const { ns, revision } = position.current
+            if (ns === undefined) return
+            const result = await remote.settings.update(ns, patch, revision)
+            if (result && result.ok === false) {
+              setError(result.error && result.error.code === 'settings/conflict' ? t('conflict') : (message(result.error) || t('saveError')))
+              load()
+              return
+            }
+            const next = result && result.ok ? result.value : undefined
+            if (next !== undefined && next.revision !== undefined) {
+              position.current = { ns, revision: next.revision }
+              if (next.value !== undefined) setState({ ns, value: next.value, revision: next.revision })
+            }
+          })
+          .catch((reason) => setError(message(reason) || t('saveError')))
+      }
+
+      if (state === undefined) {
         return h('div', { className: 'hub' },
           error === null
-            ? h('span', { className: 'hub-hint' }, t('saving'))
+            ? h('span', { className: 'hub-hint' }, t('applying'))
             : h(React.Fragment, null,
               h('div', { className: 'hub-error' }, error),
-              h('div', { className: 'hub-actions' },
+              h('div', { className: 'hub-side' },
                 h(UI.Button, { variant: 'outline', size: 'sm', onClick: load }, t('reload')))))
       }
 
-      const value = draft === undefined ? view.value : draft
+      const value = state.value
       const providers = value.providers || {}
       const tools = value.tools || {}
       const active = typeof value.active === 'string' ? value.active : ''
-      const keyRef = keyRefOf(value)
+      const provider = providers[active] || {}
+      const keyRef = typeof provider.keyRef === 'string' ? provider.keyRef : ''
+      const names = Object.keys(tools)
+      const enabled = names.filter((name) => tools[name] === true).length
       const providerIds = Object.keys(providers)
-      const dirty = JSON.stringify(value) !== JSON.stringify(view.value)
 
-      const patch = (part) => { setNotice(null); setDraft({ ...value, ...part }) }
+      const toolLabel = (name) => {
+        const key = TOOL_LABEL_KEYS[name.slice(name.indexOf('_') + 1)]
+        return key === undefined ? name : t(key)
+      }
 
-      const save = () => {
-        if (busy) return
+      const saveKey = () => {
+        if (busy || keyRef.length === 0 || keyDraft.trim().length === 0) return
         setBusy(true)
         setError(null)
-        setNotice(null)
-        const writeKey = keyDraft.trim().length > 0 && keyRef.length > 0
         Promise.resolve()
-          .then(() => remote.settings.update(view.ns, { active, hideBuiltinWeb: value.hideBuiltinWeb !== false, tools }, view.revision))
-          .then(async (result) => {
-            if (result && result.ok === false) {
-              setError(result.error && result.error.code === 'settings/conflict' ? t('conflict') : (message(result.error) || t('saveError')))
-              return
-            }
-            if (writeKey) await remote.credentials.set(keyRef, keyDraft.trim())
-            setNotice(t('saved'))
-          })
+          .then(() => remote.credentials.set(keyRef, keyDraft.trim()))
+          .then(() => { setKeyDraft(''); return load() })
           .catch((reason) => setError(message(reason) || t('saveError')))
-          .finally(() => { setBusy(false); load() })
+          .finally(() => setBusy(false))
       }
 
       const clearKey = () => {
         if (busy || keyRef.length === 0) return
         setBusy(true)
         setError(null)
-        setNotice(null)
         Promise.resolve()
           .then(() => remote.credentials.unset(keyRef))
-          .then(() => setNotice(t('saved')))
+          .then(() => load())
           .catch((reason) => setError(message(reason) || t('saveError')))
-          .finally(() => { setBusy(false); load() })
-      }
-
-      const toolLabel = (name) => {
-        const suffix = name.slice(name.indexOf('_') + 1)
-        const key = TOOL_LABEL_KEYS[suffix]
-        return key === undefined ? name : t(key)
+          .finally(() => setBusy(false))
       }
 
       return h('div', { className: 'hub' },
-        h('div', { className: 'hub-head' },
-          h('span', { className: 'hub-title' }, t('title')),
-          h('span', { className: 'hub-sub' }, t('summary'))),
-
-        h(Section, { title: t('source'), hint: t('sourceHint') },
+        h(Card, {
+          title: t('source'),
+          side: h('span', { className: 'hub-hint' }, t('sourceHint')),
+        },
           providerIds.length === 0
-            ? h('span', { className: 'hub-hint' }, t('none'))
-            : providerIds.map((id) => h(Row, { key: id, title: h('span', { className: 'hub-mono' }, id) },
-              active === id
-                ? h('div', { className: 'hub-inline' },
-                  h(UI.Tag, { tone: 'info' }, t('using')),
+            ? h('div', { className: 'hub-row' }, h('span', { className: 'hub-hint' }, t('none')))
+            : providerIds.map((id) => (active === id
+              ? h(React.Fragment, { key: id },
+                h(Line, {
+                  title: h('span', { className: 'hub-mono' }, id),
+                  tag: h(UI.Tag, { tone: 'info' }, t('using')),
+                },
                   h(UI.Button, {
                     variant: 'outline',
                     size: 'sm',
                     disabled: busy,
-                    onClick: () => patch({ active: '' }),
-                  }, t('disable')))
-                : h(UI.Button, {
+                    onClick: () => apply({ active: '' }, { active: '' }),
+                  }, t('disable'))),
+                h(Line, {
+                  title: h('span', null, t('key')),
+                  hint: h('span', { className: 'hub-hint' },
+                    keyRef.length > 0 ? keyRef : t('keyHint'),
+                    ' · ',
+                    keyState !== undefined && keyState.configured === true ? t('configured') : t('missing')),
+                },
+                  h('div', { className: 'hub-side' },
+                    h(UI.Input, {
+                      type: 'password',
+                      value: keyDraft,
+                      placeholder: t('keyPlaceholder'),
+                      disabled: busy || keyRef.length === 0,
+                      onChange: (event) => setKeyDraft(event.target.value),
+                    }),
+                    h(UI.Button, {
+                      variant: 'outline',
+                      size: 'sm',
+                      disabled: busy || keyDraft.trim().length === 0,
+                      onClick: saveKey,
+                    }, t('keySave')),
+                    keyState !== undefined && keyState.configured === true
+                      ? h(UI.Button, { variant: 'outline', size: 'sm', disabled: busy, onClick: clearKey }, t('keyClear'))
+                      : null)))
+              : h(Line, { key: id, title: h('span', { className: 'hub-mono' }, id) },
+                h(UI.Button, {
                   variant: 'outline',
                   size: 'sm',
                   disabled: busy,
-                  onClick: () => patch({ active: id }),
-                }, t('use'))))),
+                  onClick: () => apply({ active: id }, { active: id }),
+                }, t('use')))))),
 
-        h(Section, { title: t('tools'), hint: t('toolsHint') },
-          Object.keys(tools).length === 0
-            ? h('span', { className: 'hub-hint' }, t('none'))
-            : Object.keys(tools).map((name) => h(Row, {
+        h(Card, {
+          title: t('tools'),
+          side: h('span', { className: 'hub-hint' }, names.length === 0 ? '' : `${enabled}/${names.length}`),
+        },
+          names.length === 0
+            ? h('div', { className: 'hub-row' }, h('span', { className: 'hub-hint' }, t('none')))
+            : names.map((name) => h(Line, {
               key: name,
               title: h('span', null, toolLabel(name)),
+              tag: name.endsWith('_search') || name.endsWith('_extract') ? null : h(UI.Tag, { tone: 'neutral' }, t('advanced')),
               hint: h('span', { className: 'hub-mono' }, name),
             }, h(UI.Switch, {
               checked: tools[name] === true,
               label: toolLabel(name),
               disabled: busy || active === '',
-              onChange: (next) => patch({ tools: { ...tools, [name]: next } }),
+              onChange: (next) => apply({ tools: { ...tools, [name]: next } }, { tools: { ...tools, [name]: next } }),
             })))),
 
-        h(Section, { title: t('key'), hint: t('keyHint') },
-          h(Row, {
-            title: h('span', { className: 'hub-mono' }, keyRef.length > 0 ? keyRef : '—'),
-            hint: h('span', { className: 'hub-status' }, keyState === undefined
-              ? ''
-              : (keyState.configured === true ? t('configured') : t('missing'))),
-          },
-            h('div', { className: 'hub-inline' },
-              h(UI.Input, {
-                type: 'password',
-                value: keyDraft,
-                placeholder: t('keyPlaceholder'),
-                disabled: busy || keyRef.length === 0,
-                onChange: (event) => setKeyDraft(event.target.value),
-              }),
-              keyState !== undefined && keyState.configured === true
-                ? h(UI.Button, { variant: 'outline', size: 'sm', disabled: busy, onClick: clearKey }, t('clear'))
-                : null))),
-
-        h('div', { className: 'hub-actions' },
-          h(UI.Button, {
-            variant: 'primary',
-            disabled: busy || (!dirty && keyDraft.trim().length === 0),
-            onClick: save,
-          }, busy ? t('saving') : t('save')),
-          h(UI.Button, { variant: 'outline', disabled: busy, onClick: load }, t('reload'))),
-
-        error === null ? null : h('div', { className: 'hub-error' }, error),
-        notice === null ? null : h('div', { className: 'hub-hint' }, notice))
+        h('div', { className: 'hub-foot' },
+          h('span', { className: 'hub-status' },
+            error !== null ? h('span', { className: 'hub-error' }, error) : ''),
+          h(UI.Button, { variant: 'outline', size: 'sm', onClick: load }, t('reload'))))
     }
 
     function Panel(props) {

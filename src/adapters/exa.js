@@ -18,6 +18,11 @@ const exa = {
   id: 'exa',
   title: 'Exa',
   keyRequired: false,
+  defaults: {
+    baseURL: 'https://mcp.exa.ai/mcp',
+    keyRef: 'EXA_API_KEY',
+    consoleURL: 'https://dashboard.exa.ai/api-keys',
+  },
   tools: {
     search: {
       defaultOn: true,

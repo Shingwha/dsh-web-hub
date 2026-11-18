@@ -1,69 +1,54 @@
+import { visible } from './tools.js'
+
 /**
- * Mask the built-in `web_search` and `web_fetch` while the hub is loaded.
+ * The built-in web tools belong to the agent preset, so this plugin cannot
+ * unregister them. It masks each one per agent while its switch is off, and
+ * keeps a guard as a backstop for the registration window.
  *
- * They belong to the agent preset, so they cannot be unregistered from here:
- * the plugin masks them per agent with `ctx.tools.restrict()` and keeps a guard
- * as a backstop during the registration window. Both effects are owned by the
- * plugin, so unloading it restores the tools.
- *
- * The flag is read live: the guard always reflects the current setting, and the
- * masks are reconciled whenever the setting changes or an agent appears.
+ * They share the same switch map as provider tools, so the panel needs no
+ * special case: `web_search: false` means the model does not see it.
  */
 
-const TOOLS = ['web_search', 'web_fetch']
+const BUILTINS = ['web_search', 'web_fetch']
 const RETRY_LIMIT = 40
-const NAMESPACE = 'web-hub'
 
 const REASON =
-  'The built-in web tools are turned off because dsh-web-hub supplies search and fetch. '
-  + 'Call the provider tool instead (for example anysearch_search or anysearch_extract), '
-  + 'or turn off "Hide built-in web tools" on the Plugins page.'
+  'This built-in web tool is turned off in dsh-web-hub. '
+  + 'Use one of the enabled provider tools instead, or switch it back on under Plugins → dsh-web-hub.'
 
-/**
- * @param ctx - plugin context.
- * @param settings - live config readers; `hideBuiltinWeb()` is read on every check.
- * @returns a disposer that lifts the guard and every mask.
- */
-export function hideBuiltinWeb(ctx, settings) {
-  const enabled = () => settings.hideBuiltinWeb()
+/** @returns a disposer that lifts the guard and every mask. */
+export function applyBuiltinSwitches(ctx, settings) {
+  const denied = () => BUILTINS.filter((name) => !visible(settings, name, false))
 
-  const stopGuard = ctx.tools.guard((exec) => (
-    enabled() && TOOLS.includes(exec.name) ? REASON : undefined
-  ))
-
+  const stopGuard = ctx.tools.guard((exec) => (denied().includes(exec.name) ? REASON : undefined))
   const agents = new Map()
 
-  /** Bring one agent's mask in line with the current flag. */
+  /** Release the previous mask and apply the one the current switches describe. */
   const reconcile = (agent, record) => {
     if (agents.get(agent) !== record) return true
 
-    if (!enabled()) {
-      record.stopRetry?.()
-      record.stopRetry = undefined
+    record.stopRetry?.()
+    record.stopRetry = undefined
+    if (record.release !== undefined) {
       try {
-        record.release?.()
+        record.release()
       } catch {}
       record.release = undefined
-      record.hidden = false
-      return true
     }
 
-    if (record.hidden) return true
+    const deny = denied()
+    if (deny.length === 0) return true
+
     try {
-      record.release = agent.ctx.tools.restrict({ deny: TOOLS })
-      record.hidden = true
-      record.stopRetry?.()
-      record.stopRetry = undefined
+      record.release = agent.ctx.tools.restrict({ deny })
       return true
     } catch (error) {
       if (!/unknown global tool/.test(String(error))) {
         ctx.logger?.warn?.(`dsh-web-hub: cannot mask the built-in web tools: ${String(error)}`)
-        record.hidden = true
         return true
       }
       // The preset registers these tools while the agent is assembled, so an
       // unknown name retries on the next registry change.
-      if (record.stopRetry !== undefined) return false
       let attempts = 0
       record.stopRetry = ctx.on('tools/change', () => {
         attempts += 1
@@ -78,7 +63,7 @@ export function hideBuiltinWeb(ctx, settings) {
 
   const track = (agent) => {
     if (agents.has(agent)) return
-    const record = { hidden: false, release: undefined, stopRetry: undefined }
+    const record = { release: undefined, stopRetry: undefined }
     agents.set(agent, record)
     reconcile(agent, record)
   }
@@ -99,7 +84,7 @@ export function hideBuiltinWeb(ctx, settings) {
     ctx.on('agent/disposed', ({ agent }) => forget(agent)),
     ctx.on('app-boot/config-reload', resync),
     ctx.on('settings/document-updated', (ns) => {
-      if (String(ns).includes(NAMESPACE)) resync()
+      if (String(ns).includes('web-hub')) resync()
     }),
   ]
 

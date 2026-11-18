@@ -33,6 +33,11 @@ const firecrawl = {
   id: 'firecrawl',
   title: 'Firecrawl',
   keyRequired: false,
+  defaults: {
+    baseURL: 'https://mcp.firecrawl.dev/v2/mcp',
+    keyRef: 'FIRECRAWL_API_KEY',
+    consoleURL: 'https://www.firecrawl.dev/app/api-keys',
+  },
   tools: {
     search: {
       defaultOn: false,

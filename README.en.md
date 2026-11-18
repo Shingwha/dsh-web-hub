@@ -2,9 +2,9 @@
 
 [中文](README.md) | English
 
-Give the model search and fetch tools: **which service, which tools, where the key goes** — all in one panel.
+Search and fetch tools for DeepSeek Harness: **one switchboard decides what the model sees**, and a provider is only a group of tools.
 
-Every service keeps its own tools, parameters and descriptions; the plugin only mounts them and decides, per switch, whether the model can see them.
+Search from one service, fetch with another, or mix in the built-in official tools — any combination works.
 
 ## Requirements
 
@@ -26,8 +26,6 @@ Every service keeps its own tools, parameters and descriptions; the plugin only 
 4. Wait for the install to finish (the first run fetches dependencies).
 5. **Reload the page** so the browser loads the panel code.
 
-When it is done, **dsh-web-hub** appears in the Plugins list with status *running*.
-
 ### From a local tarball (development)
 
 ```sh
@@ -41,27 +39,35 @@ Do not select the plugin directory: pnpm installs a directory as a `link:` and t
 
 ## After installing
 
-The plugin takes effect immediately:
+- The model gains seven tools: `anysearch_search`, `anysearch_extract`, `exa_search`,
+  `exa_extract`, `tavily_search`, `tavily_extract`, `firecrawl_extract`.
+- The built-in `web_search` / `web_fetch` are **off** by default, so two search stacks
+  do not compete.
 
-- The model gains `anysearch_search` and `anysearch_extract`.
-- The built-in `web_search` / `web_fetch` are **hidden**, so two search stacks do not compete.
-
-To keep the built-in tools, open **Plugins → dsh-web-hub** and turn off
-"Hide web_search / web_fetch from the official plugins".
-
-Verify: start a new session and ask the model to search something; it should call
-`anysearch_search` rather than `web_search`.
+Turn off whatever you do not want; turning everything off is fine too.
 
 ## Configuration
 
-Open **Plugins → dsh-web-hub**:
+Open **Plugins → dsh-web-hub**. The panel groups tools by provider:
 
-1. **Source** — pick one service; "Turn off" mounts no tools at all.
-2. **Tools** — `search` and `extract` are on by default; enable the rest as needed.
-3. **Key (optional)** — leave it empty for anonymous calls at a lower rate limit;
-   "Get an API key" opens the provider's console.
+```
+Tools                                       7/13
+Built-in
+  web_search      [ ]    web_fetch      [ ]
+AnySearch        key set
+  anysearch_search [✓]   anysearch_extract [✓]
+  Key ANYSEARCH_API_KEY · key set      Get an API key  [Clear]
+Exa              no key
+  exa_search      [✓]    exa_extract   [✓]
+  Key EXA_API_KEY · no key             Get an API key  [____] [Save]
+…
+```
 
-Switches and the source selection apply instantly; a key is saved with the button.
+- **Switch**: on means the model can call it on its next step; off removes it from the
+  tool list and costs no tokens.
+- **Key**: lives inside its provider group and is optional. Empty means anonymous or
+  keyless access; "Get an API key" opens the provider console.
+- Keys are stored in the local credential store; the config keeps only the reference name.
 
 ## Supported providers
 
@@ -72,22 +78,12 @@ Switches and the source selection apply instantly; a key is saved with the butto
 | **Tavily** | ✅ | ✅ | ✅ daily allowance, then needs a key |
 | **Firecrawl** | ⚠️ search needs a key | ✅ | extraction is keyless |
 
-Exactly one provider is active at a time; the model sees the new tool set on its next step.
-
-## What each switch does
-
-| Switch | Effect |
-|---|---|
-| Source | Mounts that service's tools so the model can call them on its next step |
-| Tool switch | A tool that is off never enters the model context and costs no tokens |
-| Hide built-in web tools | Masks `web_search` / `web_fetch` provided by the official plugins |
-
 ## Uninstall
 
 Disable or remove **dsh-web-hub** in Plugins:
 
 - Every tool it mounted disappears.
-- The hidden built-in web tools come back.
+- The built-in web tools it switched off come back.
 - No other configuration needs to change.
 
 ## Add a provider

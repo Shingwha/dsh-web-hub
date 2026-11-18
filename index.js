@@ -1,24 +1,25 @@
 import { Config, readers } from './src/config.js'
-import { toolSet } from './src/registry.js'
-import { hideBuiltinWeb } from './src/builtin.js'
+import { toolCatalog } from './src/tools.js'
+import { applyBuiltinSwitches } from './src/builtin.js'
 
 export { Config }
 
 export const name = 'dsh-web-hub'
 
 /**
- * The hub owns no tools of its own: it mounts the tools adapters declare, and
- * optionally masks the built-in web tools so the model sees one search stack.
+ * The hub owns no model-facing tool of its own. It mounts the tools every
+ * adapter declares, and it masks the two built-in web tools according to the
+ * same switch map, so one panel decides everything the model can see.
  */
 export const inject = ['tools', 'agents', 'credentials']
 
 export function apply(ctx, config) {
   const settings = readers(config)
 
-  ctx.effect(() => hideBuiltinWeb(ctx, settings), 'dsh-web-hub: built-in web tools')
+  ctx.effect(() => applyBuiltinSwitches(ctx, settings), 'dsh-web-hub: built-in web tools')
 
   ctx.effect(() => {
-    const disposers = toolSet(ctx, settings).map(({ definition, when }) => (
+    const disposers = toolCatalog(ctx, settings).map(({ definition, when }) => (
       ctx.tools.register(definition, { when })
     ))
     return () => {

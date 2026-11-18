@@ -2,36 +2,30 @@ import { adapters } from './adapters/index.js'
 import { DEFAULTS } from './config.js'
 
 /**
- * Public name of one adapter tool. The provider prefix keeps names unique
- * across providers, so session history and permission rules survive a switch.
+ * One rule for the whole plugin: a tool is visible exactly when its switch is
+ * on. A tool with no stored switch falls back to the adapter's own default, so
+ * a newly added tool needs no config edit.
  */
-export function publicName(adapter, tool) {
+export function visible(settings, name, defaultOn) {
+  const value = settings.tools()[name]
+  return typeof value === 'boolean' ? value : defaultOn === true
+}
+
+/** Public name of one adapter tool: `<provider>_<tool>`, unique across providers. */
+function publicName(adapter, tool) {
   return `${adapter.id}_${tool}`
 }
 
-/** Normalized settings of one provider, with defaults filled in. */
-export function providerSettings(settings, id) {
-  const all = settings.providers()
-  const value = all[id] ?? {}
+/** Normalized settings of one provider, adapter defaults first. */
+export function providerSettings(settings, adapter) {
+  const value = { ...adapter.defaults, ...(settings.providers()[adapter.id] ?? {}) }
   return {
     baseURL: typeof value.baseURL === 'string' ? value.baseURL.trim() : '',
     keyRef: typeof value.keyRef === 'string' ? value.keyRef.trim() : '',
+    consoleURL: typeof value.consoleURL === 'string' ? value.consoleURL.trim() : '',
     maxResults: Number.isFinite(value.maxResults) ? value.maxResults : DEFAULTS.maxResults,
     timeoutMs: Number.isFinite(value.timeoutMs) && value.timeoutMs > 0 ? value.timeoutMs : DEFAULTS.timeoutMs,
   }
-}
-
-/**
- * Whether one tool is admitted for the current model step.
- *
- * Every known tool is registered once and admitted by this predicate, so a
- * saved switch needs neither a restart nor a re-registration: an unadmitted
- * tool costs no tokens and cannot be called.
- */
-export function admitted(settings, adapter, tool, name) {
-  if (settings.active() !== adapter.id) return false
-  const value = settings.tools()[name]
-  return typeof value === 'boolean' ? value : tool.defaultOn === true
 }
 
 /** Resolve a configured credential reference, or undefined when it is unset. */
@@ -41,20 +35,16 @@ async function resolveKey(ctx, ref) {
   return typeof hit?.value === 'string' && hit.value.length > 0 ? hit.value : undefined
 }
 
-/**
- * Run one adapter tool. The adapter owns the contract; this only resolves the
- * provider's live settings and credential, then normalizes the failure text.
- */
-async function execute(ctx, adapter, tool, settings, args, exec) {
-  const provider = providerSettings(settings, adapter.id)
+/** Run one adapter tool, resolving the provider's live settings and credential. */
+async function run(ctx, adapter, tool, settings, args, exec) {
+  const provider = providerSettings(settings, adapter)
   if (provider.baseURL.length === 0) {
-    throw new Error(`${adapter.title}: baseURL is empty; set providers.${adapter.id}.baseURL in the dsh-web-hub config`)
+    throw new Error(`${adapter.title}: no endpoint configured; set providers.${adapter.id}.baseURL`)
   }
   // A missing credential is only fatal when the provider says it needs one.
-  // Providers that allow anonymous access keep working without a key.
   const key = await resolveKey(ctx, provider.keyRef)
   if (provider.keyRef.length > 0 && key === undefined && adapter.keyRequired === true) {
-    throw new Error(`${adapter.title}: credential ${provider.keyRef} is not set and this provider requires one; fill it in on the Plugins page`)
+    throw new Error(`${adapter.title}: credential ${provider.keyRef} is not set; add it under Keys on the Plugins page`)
   }
   try {
     return await tool.run({ cfg: provider, key, args: args ?? {}, signal: exec.signal })
@@ -70,26 +60,26 @@ function definition(ctx, adapter, tool, name, settings) {
     name,
     description: tool.description,
     parameters: tool.parameters,
-    timeoutMs: providerSettings(settings, adapter.id).timeoutMs,
+    timeoutMs: providerSettings(settings, adapter).timeoutMs,
     output: {
       schema: { type: 'string' },
       render: (_args, value) => [{ type: 'text', text: typeof value === 'string' ? value : String(value ?? '') }],
     },
-    execute: (args, exec) => execute(ctx, adapter, tool, settings, args, exec),
+    execute: (args, exec) => run(ctx, adapter, tool, settings, args, exec),
   }
 }
 
 /**
- * Every tool of every adapter, paired with its admission predicate.
- * This is the single place that knows the naming and admission rules.
+ * Every tool of every adapter, paired with its visibility predicate. This is
+ * the only place that knows the naming rule and the switch lookup.
  */
-export function toolSet(ctx, settings) {
+export function toolCatalog(ctx, settings) {
   return Object.values(adapters).flatMap((adapter) => (
     Object.entries(adapter.tools).map(([tool, spec]) => {
       const name = publicName(adapter, tool)
       return {
         definition: definition(ctx, adapter, spec, name, settings),
-        when: () => admitted(settings, adapter, spec, name),
+        when: () => visible(settings, name, spec.defaultOn),
       }
     })
   ))

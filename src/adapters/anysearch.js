@@ -30,6 +30,11 @@ const anysearch = {
   // Anonymous access works for every tool at lower rate limits, so a missing key
   // is a quality-of-service choice rather than a setup error.
   keyRequired: false,
+  defaults: {
+    baseURL: 'https://api.anysearch.com/mcp',
+    keyRef: 'ANYSEARCH_API_KEY',
+    consoleURL: 'https://www.anysearch.com/console/api-keys',
+  },
   tools: {
     search: {
       defaultOn: true,

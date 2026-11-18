@@ -7,28 +7,22 @@ window.__ModuleLoader__.load({
 
     const NS = 'dsh-web-hub'
     const BUNDLE = 'dsh-web-hub'
+    const BUILTIN_PREFIX = 'web_'
 
     const zh = {
-      source: '来源',
-      sourceHint: '同一时刻只有一个来源生效。',
-      none: '还没有可用的来源。',
-      use: '设为当前',
-      using: '使用中',
-      disable: '关闭',
-      key: '密钥',
-      keyHint: '可选，留空按匿名调用。',
+      tools: '工具',
+      summary: '开关决定模型能看到哪些工具，来源只是分组。',
+      builtin: '内置',
+      builtinHint: '由官方插件提供，关闭后从模型工具列表移除。',
+      keys: '密钥',
       getKey: '获取 API Key',
-      keyPlaceholder: '粘贴 Key（可留空）',
-      keyPlaceholderConfigured: '已配置 · 粘贴新 Key 可替换',
+      keyPlaceholder: '粘贴 Key',
       keySave: '保存',
       keyClear: '清除',
-      configured: '已配置',
-      missing: '未配置',
-      tools: '工具',
-      toolsHint: '没勾选的工具不会出现在模型工具列表里。',
+      keySet: '已配置密钥',
+      keyUnset: '未配置密钥',
+      keyFree: '免 key',
       advanced: '扩展',
-      builtin: '内置网页工具',
-      builtinHide: '隐藏官方插件提供的 web_search / web_fetch',
       reload: '重新读取',
       loadError: '读取配置失败',
       saveError: '保存失败',
@@ -37,26 +31,19 @@ window.__ModuleLoader__.load({
     }
 
     const en = {
-      source: 'Source',
-      sourceHint: 'Exactly one source is active at a time.',
-      none: 'No source available.',
-      use: 'Use',
-      using: 'In use',
-      disable: 'Turn off',
-      key: 'Key',
-      keyHint: 'Optional; empty means anonymous calls.',
+      tools: 'Tools',
+      summary: 'The switches decide what the model sees; a provider is only a group.',
+      builtin: 'Built-in',
+      builtinHint: 'Shipped by the official plugins; turning one off removes it from the model.',
+      keys: 'Key',
       getKey: 'Get an API key',
-      keyPlaceholder: 'Paste a key (optional)',
-      keyPlaceholderConfigured: 'Configured · paste a new key to replace',
+      keyPlaceholder: 'Paste a key',
       keySave: 'Save',
       keyClear: 'Clear',
-      configured: 'set',
-      missing: 'not set',
-      tools: 'Tools',
-      toolsHint: 'Tools that are off never reach the model.',
+      keySet: 'key set',
+      keyUnset: 'no key',
+      keyFree: 'keyless',
       advanced: 'extended',
-      builtin: 'Built-in web tools',
-      builtinHide: 'Hide web_search / web_fetch from the official plugins',
       reload: 'Reload',
       loadError: 'Could not read the configuration',
       saveError: 'Could not save',
@@ -67,52 +54,32 @@ window.__ModuleLoader__.load({
     const STYLES = [
       '.hub{display:flex;flex-direction:column;gap:14px;font-size:13px;color:var(--dsw-alias-text-l1)}',
       '.hub-card{border:1px solid var(--dsw-alias-border-l2);border-radius:10px}',
-      '.hub-card-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 16px;border-bottom:1px solid var(--dsw-alias-border-l2)}',
+      '.hub-card-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:12px 16px;border-bottom:1px solid var(--dsw-alias-border-l2)}',
       '.hub-card-title{font-weight:600}',
-      '.hub-card-body{display:flex;flex-direction:column}',
-      '.hub-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 16px}',
+      '.hub-group{border-top:1px solid var(--dsw-alias-border-l2)}',
+      '.hub-group:first-child{border-top:none}',
+      '.hub-group-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 16px;background:var(--dsw-alias-bg-layer-2)}',
+      '.hub-group-name{font-weight:600}',
+      '.hub-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 16px}',
       '.hub-row+.hub-row{border-top:1px solid var(--dsw-alias-border-l2)}',
-      '.hub-row-main{display:flex;flex-direction:column;gap:3px;min-width:0}',
-      '.hub-label{display:flex;align-items:center;gap:8px}',
+      '.hub-name{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px}',
       '.hub-hint{color:var(--dsw-alias-text-l3);font-size:12px;line-height:1.45}',
       '.hub-mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;color:var(--dsw-alias-text-l3)}',
-      '.hub-name{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px}',
-      '.hub-link{margin-left:8px;color:var(--dsw-alias-brand-primary);text-decoration:none}',
-      '.hub-link:hover{text-decoration:underline}',
       '.hub-side{display:flex;align-items:center;gap:8px;flex:none}',
+      '.hub-link{color:var(--dsw-alias-brand-primary);text-decoration:none;white-space:nowrap}',
+      '.hub-link:hover{text-decoration:underline}',
+      '.hub-key{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 16px 12px;border-top:1px dashed var(--dsw-alias-border-l2)}',
+      '.hub-key-main{display:flex;align-items:center;gap:8px;min-width:0;flex-wrap:wrap}',
       '.hub-foot{display:flex;align-items:center;justify-content:space-between;gap:10px}',
       '.hub-error{font-size:12px;color:var(--dsw-alias-state-error-primary,#d33)}',
     ].join('')
 
-    // ── building blocks ─────────────────────────────────────────────────────
-
-    function Line(props) {
-      return h('div', { className: 'hub-row' },
-        h('div', { className: 'hub-row-main' },
-          h('div', { className: 'hub-label' }, props.title, props.tag || null),
-          props.hint ? h('span', { className: 'hub-hint' }, props.hint) : null),
-        h('div', { className: 'hub-side' }, props.children))
-    }
-
-    function Card(props) {
-      return h('section', { className: 'hub-card' },
-        h('div', { className: 'hub-card-head' },
-          h('span', { className: 'hub-card-title' }, props.title),
-          props.side || null),
-        h('div', { className: 'hub-card-body' }, props.children))
-    }
-
-    /** The provider whose settings the panel edits. */
-    function providerOf(value) {
-      const providers = (value && value.providers) || {}
-      const active = value && typeof value.active === 'string' ? value.active : ''
-      const provider = providers[active] || {}
-      return {
-        active,
-        providers,
-        keyRef: typeof provider.keyRef === 'string' ? provider.keyRef : '',
-        consoleURL: typeof provider.consoleURL === 'string' ? provider.consoleURL : '',
-      }
+    function row(name, hint, children) {
+      return h('div', { className: 'hub-row', key: name },
+        h('div', { className: 'hub-side', style: { flex: '1 1 auto', minWidth: 0 } },
+          h('span', { className: 'hub-name' }, name),
+          hint || null),
+        h('div', { className: 'hub-side' }, children))
     }
 
     function findNamespace(view) {
@@ -127,16 +94,41 @@ window.__ModuleLoader__.load({
       try { return JSON.stringify(error) } catch { return String(error) }
     }
 
-    // ── data ────────────────────────────────────────────────────────────────
+    /** Every keyRef in the config, deduplicated. */
+    function keyRefs(providers) {
+      const refs = new Set()
+      for (const provider of Object.values(providers)) {
+        if (provider && typeof provider.keyRef === 'string' && provider.keyRef.length > 0) refs.add(provider.keyRef)
+      }
+      return [...refs]
+    }
 
-    /**
-     * Owns the settings namespace, the credential status, and the write queue.
-     * Switches write immediately; writes serialize and each reads the latest
-     * revision, so two quick toggles cannot race.
-     */
+    /** Group tool names: the built-ins first, then each provider in config order. */
+    function groups(tools, providers) {
+      const ids = Object.keys(providers)
+      const builtin = []
+      const byProvider = new Map(ids.map((id) => [id, []]))
+      const stray = []
+
+      for (const name of Object.keys(tools)) {
+        if (name.startsWith(BUILTIN_PREFIX)) { builtin.push(name); continue }
+        const owner = ids.find((id) => name.startsWith(`${id}_`))
+        if (owner === undefined) stray.push(name)
+        else byProvider.get(owner).push(name)
+      }
+
+      const out = [{ id: 'builtin', names: builtin }]
+      for (const id of ids) {
+        const names = byProvider.get(id)
+        if (names.length > 0) out.push({ id, names })
+      }
+      if (stray.length > 0) out.push({ id: 'other', names: stray })
+      return out.filter((group) => group.names.length > 0)
+    }
+
     function useHub(remote, t) {
       const [state, setState] = React.useState(undefined)
-      const [keyState, setKeyState] = React.useState(undefined)
+      const [keys, setKeys] = React.useState({})
       const [busy, setBusy] = React.useState(false)
       const [error, setError] = React.useState(null)
       const position = React.useRef({ ns: undefined, revision: undefined })
@@ -154,19 +146,19 @@ window.__ModuleLoader__.load({
               return
             }
             const ns = findNamespace(described && described.ok ? described.value : undefined)
-            if (ns === undefined) {
-              setError(t('loadError'))
-              return
-            }
+            if (ns === undefined) { setError(t('loadError')); return }
             const value = ns.value && typeof ns.value === 'object' ? ns.value : {}
             position.current = { ns: ns.ns, revision: ns.revision }
-            setState({ ns: ns.ns, value })
-            const { keyRef } = providerOf(value)
-            if (keyRef.length === 0) { setKeyState(undefined); return }
-            const status = await remote.credentials.describe([keyRef])
+            setState({ value })
+
+            const refs = keyRefs(value.providers || {})
+            if (refs.length === 0) { setKeys({}); return }
+            const status = await remote.credentials.describe(refs)
             if (cancelled) return
-            const map = status && status.ok ? status.value : undefined
-            setKeyState(map && typeof map === 'object' ? map[keyRef] : undefined)
+            const map = status && status.ok && status.value && typeof status.value === 'object' ? status.value : {}
+            const next = {}
+            for (const ref of refs) next[ref] = map[ref]?.configured === true
+            setKeys(next)
           })
           .catch((reason) => { if (!cancelled) setError(message(reason) || t('loadError')) })
         return () => { cancelled = true }
@@ -189,174 +181,113 @@ window.__ModuleLoader__.load({
           const next = result && result.ok ? result.value : undefined
           if (next === undefined || next.revision === undefined) return
           position.current = { ns, revision: next.revision }
-          if (next.value !== undefined) setState({ ns, value: next.value })
+          if (next.value !== undefined) setState({ value: next.value })
         }).catch((reason) => setError(message(reason) || t('saveError')))
       }
 
-      const write = (patch, optimistic) => {
+      const toggle = (tools, name, on) => {
         setError(null)
-        setState((current) => (current === undefined
-          ? current
-          : { ...current, value: { ...current.value, ...optimistic } }))
-        send(patch)
+        const next = { ...tools, [name]: on }
+        setState((current) => (current === undefined ? current : { value: { ...current.value, tools: next } }))
+        send({ tools: next })
       }
 
-      const saveKey = (value) => {
-        const { keyRef } = providerOf(state && state.value)
-        if (busy || keyRef.length === 0 || value.trim().length === 0) return
+      const writeKey = (ref, value, clear) => {
+        if (busy) return
         setBusy(true)
         setError(null)
+        const task = clear
+          ? remote.credentials.unset(ref)
+          : remote.credentials.set(ref, value)
         Promise.resolve()
-          .then(() => remote.credentials.set(keyRef, value.trim()))
+          .then(() => task)
           .then(() => load())
           .catch((reason) => setError(message(reason) || t('saveError')))
           .finally(() => setBusy(false))
       }
 
-      const clearKey = () => {
-        const { keyRef } = providerOf(state && state.value)
-        if (busy || keyRef.length === 0) return
-        setBusy(true)
-        setError(null)
-        Promise.resolve()
-          .then(() => remote.credentials.unset(keyRef))
-          .then(() => load())
-          .catch((reason) => setError(message(reason) || t('saveError')))
-          .finally(() => setBusy(false))
-      }
-
-      return { state, keyState, busy, error, load, write, saveKey, clearKey }
+      return { state, keys, busy, error, load, toggle, writeKey }
     }
 
-    // ── cards ───────────────────────────────────────────────────────────────
+    function KeyLine(props) {
+      const { t, ref, configured, busy, onSave, onClear, consoleURL } = props
+      const [draft, setDraft] = React.useState('')
 
-    function SourceCard(hub, t, keyDraft, setKeyDraft) {
-      const { state, keyState, busy } = hub
-      const { active, providers, keyRef, consoleURL } = providerOf(state.value)
-      const ids = Object.keys(providers)
-      const configured = keyState !== undefined && keyState.configured === true
-
-      if (ids.length === 0) {
-        return h(Card, { title: t('source') },
-          h('div', { className: 'hub-row' }, h('span', { className: 'hub-hint' }, t('none'))))
-      }
-
-      const rows = []
-      for (const id of ids) {
-        if (id !== active) {
-          rows.push(h(Line, { key: id, title: h('span', { className: 'hub-mono' }, id) },
-            h(UI.Button, {
-              variant: 'outline',
-              size: 'sm',
-              disabled: busy,
-              onClick: () => hub.write({ active: id }, { active: id }),
-            }, t('use'))))
-          continue
-        }
-
-        rows.push(h(Line, {
-          key: id,
-          title: h('span', { className: 'hub-mono' }, id),
-          tag: h(UI.Tag, { tone: 'info' }, t('using')),
-        },
+      return h('div', { className: 'hub-key' },
+        h('div', { className: 'hub-key-main' },
+          h('span', { className: 'hub-hint' }, t('keys')),
+          h('span', { className: 'hub-mono' }, ref),
+          h('span', { className: 'hub-hint' }, configured ? t('keySet') : t('keyUnset')),
+          consoleURL.length > 0
+            ? h('a', { className: 'hub-link', href: consoleURL, target: '_blank', rel: 'noreferrer noopener' }, t('getKey'))
+            : null),
+        h('div', { className: 'hub-side' },
+          h(UI.Input, {
+            type: 'password',
+            value: draft,
+            placeholder: t('keyPlaceholder'),
+            disabled: busy,
+            onChange: (event) => setDraft(event.target.value),
+          }),
           h(UI.Button, {
             variant: 'outline',
             size: 'sm',
-            disabled: busy,
-            onClick: () => hub.write({ active: '' }, { active: '' }),
-          }, t('disable'))))
-
-        rows.push(h(Line, {
-          key: id + ':key',
-          title: h('span', { className: 'hub-label' },
-            t('key'),
-            h('span', { className: 'hub-mono' }, keyRef.length > 0 ? keyRef : t('keyHint')),
-            consoleURL.length > 0
-              ? h('a', {
-                className: 'hub-link',
-                href: consoleURL,
-                target: '_blank',
-                rel: 'noreferrer noopener',
-              }, t('getKey'))
-              : null),
-          tag: configured
-            ? h(UI.Tag, { tone: 'info' }, t('configured'))
-            : h(UI.Tag, { tone: 'neutral' }, t('missing')),
-        },
-          h('div', { className: 'hub-side' },
-            h(UI.Input, {
-              type: 'password',
-              value: keyDraft,
-              placeholder: configured ? t('keyPlaceholderConfigured') : t('keyPlaceholder'),
-              disabled: busy || keyRef.length === 0,
-              onChange: (event) => setKeyDraft(event.target.value),
-            }),
-            h(UI.Button, {
-              variant: 'outline',
-              size: 'sm',
-              disabled: busy || keyDraft.trim().length === 0,
-              onClick: () => hub.saveKey(keyDraft),
-            }, t('keySave')),
-            configured
-              ? h(UI.Button, { variant: 'outline', size: 'sm', disabled: busy, onClick: hub.clearKey }, t('keyClear'))
-              : null)))
-      }
-
-      return h(Card, { title: t('source'), side: h('span', { className: 'hub-hint' }, t('sourceHint')) }, rows)
+            disabled: busy || draft.trim().length === 0,
+            onClick: () => { onSave(draft.trim()); setDraft('') },
+          }, t('keySave')),
+          configured
+            ? h(UI.Button, { variant: 'outline', size: 'sm', disabled: busy, onClick: onClear }, t('keyClear'))
+            : null))
     }
 
-    function ToolsCard(hub, t) {
-      const { state, busy } = hub
-      const value = state.value
-      const tools = value.tools || {}
-      const { active } = providerOf(value)
-      const names = Object.keys(tools)
-      const enabled = names.filter((name) => tools[name] === true).length
+    function Group(props) {
+      const { t, group, tools, providers, keys, busy, onToggle, onKey } = props
+      const provider = group.id === 'builtin' || group.id === 'other' ? undefined : providers[group.id]
+      const title = group.id === 'builtin'
+        ? t('builtin')
+        : (provider && typeof provider.title === 'string' && provider.title.length > 0
+          ? provider.title
+          : group.id.charAt(0).toUpperCase() + group.id.slice(1))
+      const keyRef = provider && typeof provider.keyRef === 'string' ? provider.keyRef : ''
+      const configured = keys[keyRef] === true
+      const consoleURL = provider && typeof provider.consoleURL === 'string' ? provider.consoleURL : ''
 
-      const rows = names.map((name) => h(Line, {
-        key: name,
-        title: h('span', { className: 'hub-name' }, name),
-        tag: name.endsWith('_search') || name.endsWith('_extract')
-          ? null
-          : h(UI.Tag, { tone: 'neutral' }, t('advanced')),
-      }, h(UI.Switch, {
-        checked: tools[name] === true,
-        label: name,
-        disabled: busy || active === '',
-        onChange: (next) => hub.write(
-          { tools: { ...tools, [name]: next } },
-          { tools: { ...tools, [name]: next } },
-        ),
-      })))
+      const status = group.id === 'builtin'
+        ? t('builtinHint')
+        : keyRef.length === 0
+          ? t('keyFree')
+          : (configured ? t('keySet') : t('keyUnset'))
 
-      return h(Card, {
-        title: t('tools'),
-        side: h('span', { className: 'hub-hint' }, names.length === 0 ? '' : `${enabled}/${names.length}`),
-      },
-        names.length === 0
-          ? h('div', { className: 'hub-row' }, h('span', { className: 'hub-hint' }, t('none')))
-          : rows)
-    }
-
-    function BuiltinCard(hub, t) {
-      const { state, busy } = hub
-      const hidden = state.value.hideBuiltinWeb !== false
-      return h(Card, { title: t('builtin') },
-        h(Line, { title: h('span', null, t('builtinHide')) },
+      return h('div', { className: 'hub-group' },
+        h('div', { className: 'hub-group-head' },
+          h('span', { className: 'hub-group-name' }, title),
+          h('span', { className: 'hub-hint' }, status)),
+        group.names.map((name) => row(name,
+          name.indexOf('_') > 0 && /_(get_sub_domains|batch_search|score)$/.test(name)
+            ? h(UI.Tag, { tone: 'neutral' }, t('advanced'))
+            : null,
           h(UI.Switch, {
-            checked: hidden,
-            label: t('builtinHide'),
+            checked: tools[name] === true,
+            label: name,
             disabled: busy,
-            onChange: (next) => hub.write({ hideBuiltinWeb: next }, { hideBuiltinWeb: next }),
-          })))
+            onChange: (next) => onToggle(tools, name, next),
+          }))),
+        keyRef.length > 0
+          ? h(KeyLine, {
+            t,
+            ref: keyRef,
+            configured,
+            busy,
+            consoleURL,
+            onSave: (value) => onKey(keyRef, value, false),
+            onClear: () => onKey(keyRef, '', true),
+          })
+          : null)
     }
-
-    // ── panel ───────────────────────────────────────────────────────────────
 
     function PanelInner(props) {
       const { remote, t } = props
       const hub = useHub(remote, t)
-      const [keyDraft, setKeyDraft] = React.useState('')
 
       if (hub.state === undefined) {
         return h('div', { className: 'hub' },
@@ -367,10 +298,32 @@ window.__ModuleLoader__.load({
               h(UI.Button, { variant: 'outline', size: 'sm', onClick: hub.load }, t('reload'))))
       }
 
+      const value = hub.state.value
+      const tools = value.tools || {}
+      const providers = value.providers || {}
+      const names = Object.keys(tools)
+      const on = names.filter((name) => tools[name] === true).length
+
       return h('div', { className: 'hub' },
-        SourceCard(hub, t, keyDraft, setKeyDraft),
-        ToolsCard(hub, t),
-        BuiltinCard(hub, t),
+        h('section', { className: 'hub-card' },
+          h('div', { className: 'hub-card-head' },
+            h('div', null,
+              h('div', { className: 'hub-card-title' }, t('tools')),
+              h('div', { className: 'hub-hint' }, t('summary'))),
+            h('span', { className: 'hub-hint' }, `${on}/${names.length}`)),
+          names.length === 0
+            ? h('div', { className: 'hub-row' }, h('span', { className: 'hub-hint' }, t('loading')))
+            : groups(tools, providers).map((group) => h(Group, {
+              key: group.id,
+              t,
+              group,
+              tools,
+              providers,
+              keys: hub.keys,
+              busy: hub.busy,
+              onToggle: hub.toggle,
+              onKey: hub.writeKey,
+            }))),
         h('div', { className: 'hub-foot' },
           h('span', { className: 'hub-error' }, hub.error === null ? '' : hub.error),
           h(UI.Button, { variant: 'outline', size: 'sm', onClick: hub.load }, t('reload'))))

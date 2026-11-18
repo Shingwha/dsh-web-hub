@@ -51,6 +51,11 @@ const tavily = {
   id: 'tavily',
   title: 'Tavily',
   keyRequired: false,
+  defaults: {
+    baseURL: 'https://mcp.tavily.com/mcp/',
+    keyRef: 'TAVILY_API_KEY',
+    consoleURL: 'https://app.tavily.com',
+  },
   tools: {
     search: {
       defaultOn: true,

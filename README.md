@@ -2,9 +2,9 @@
 
 [中文](README.md) | [English](README.en.md)
 
-给模型挂上搜索与抓取工具：**用哪个服务、开哪些工具、密钥填哪**，一块面板管完。
+给 DeepSeek Harness 提供搜索与抓取工具：**一个开关表决定模型能看到什么**，来源只是工具的分组。
 
-每个服务保留自己的工具、参数和说明，插件只负责把它们挂上去，并按开关决定模型能不能看到。
+一家提供搜索、另一家提供抓取，甚至和内置的官方工具混用，都可以任意组合。
 
 ## 环境要求
 
@@ -26,8 +26,6 @@
 4. 等待安装完成（首次会拉取依赖，约几秒）。
 5. **刷新一次页面**，让浏览器加载面板代码。
 
-装好后 Plugins 列表里会出现 **dsh-web-hub**，状态为「运行中」。
-
 ### 方式二：本地打包安装（开发用）
 
 ```sh
@@ -40,24 +38,31 @@ npm pack
 
 ## 装好之后
 
-插件默认立即生效：
+- 模型多出 7 个工具：`anysearch_search`、`anysearch_extract`、`exa_search`、`exa_extract`、`tavily_search`、`tavily_extract`、`firecrawl_extract`
+- DSH 自带的 `web_search` / `web_fetch` 默认**关闭**，避免两套搜索并存
 
-- 模型多出 `anysearch_search`、`anysearch_extract` 两个工具
-- DSH 自带的 `web_search` / `web_fetch` **被隐藏**，避免两套搜索并存
-
-不想隐藏内置工具，打开 **Plugins → dsh-web-hub**，关掉「隐藏官方插件提供的 web_search / web_fetch」即可。
-
-验证：新开一个会话，让模型搜点东西，它应该调用 `anysearch_search` 而不是 `web_search`。
+不想要哪些就关掉哪些，全都关掉也不会出错。
 
 ## 配置
 
-打开 **Plugins → dsh-web-hub**：
+打开 **Plugins → dsh-web-hub**，界面按来源分组：
 
-1. **来源** — 选一个服务；选「关闭」则不下发任何工具。
-2. **工具** — 默认开 `search` 和 `extract`，其余按需勾选。
-3. **密钥（可选）** — 留空按匿名调用（限额较低），点「获取 API Key」直达申请页。
+```
+工具                                       7/13
+内置
+  web_search      [ ]    web_fetch      [ ]
+AnySearch        已配置密钥
+  anysearch_search [✓]   anysearch_extract [✓]
+  密钥 ANYSEARCH_API_KEY · 已配置   获取 API Key  [清除]
+Exa              未配置密钥
+  exa_search      [✓]    exa_extract   [✓]
+  密钥 EXA_API_KEY · 未配置        获取 API Key  [____] [保存]
+…
+```
 
-开关和来源点一下立即生效；密钥填完点「保存」。
+- **开关**：打开 = 模型下一步就能调用；关闭 = 从工具列表移除，且不占 token
+- **密钥**：在每个来源的组内，可选。留空按匿名/免 key 调用，点击「获取 API Key」直达申请页
+- 密钥只写入本机凭据库，配置文件里仅保存引用名
 
 ## 支持的来源
 
@@ -68,22 +73,12 @@ npm pack
 | **Tavily** | ✅ | ✅ | ✅ 有每日额度，用尽后需 key |
 | **Firecrawl** | ⚠️ 搜索需 key | ✅ | 抓取免 key |
 
-同一时刻只有一个来源生效，切换后模型下一步就看到新的工具集。
-
-## 三个开关分别做什么
-
-| 开关 | 效果 |
-|---|---|
-| 来源 | 挂载该服务的工具，模型下一步就能调用 |
-| 工具开关 | 没勾的工具不进入模型上下文，也不占 token |
-| 隐藏内置网页工具 | 屏蔽官方插件提供的 `web_search` / `web_fetch` |
-
 ## 卸载
 
 在 Plugins 里停用或移除 **dsh-web-hub**：
 
 - 它挂载的工具全部消失
-- 被隐藏的内置网页工具自动恢复
+- 被关闭的内置网页工具自动恢复
 - 不需要改其它配置
 
 ## 加一个来源

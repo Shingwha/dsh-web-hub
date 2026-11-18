@@ -285,6 +285,25 @@ window.__ModuleLoader__.load({
           : null)
     }
 
+    /** Surfaces a render crash instead of letting React drop the whole card. */
+    class Boundary extends React.Component {
+      constructor(props) {
+        super(props)
+        this.state = { error: null }
+      }
+
+      static getDerivedStateFromError(error) {
+        return { error }
+      }
+
+      render() {
+        if (this.state.error !== null) {
+          return h('div', { className: 'hub-error' }, 'dsh-web-hub 渲染出错：' + String(this.state.error && this.state.error.message ? this.state.error.message : this.state.error))
+        }
+        return this.props.children
+      }
+    }
+
     function PanelInner(props) {
       const { remote, t } = props
       const hub = useHub(remote, t)
@@ -312,7 +331,7 @@ window.__ModuleLoader__.load({
               h('div', { className: 'hub-hint' }, t('summary'))),
             h('span', { className: 'hub-hint' }, `${on}/${names.length}`)),
           names.length === 0
-            ? h('div', { className: 'hub-row' }, h('span', { className: 'hub-hint' }, t('loading')))
+            ? h('div', { className: 'hub-row' }, h('span', { className: 'hub-hint' }, '配置里没有工具开关（tools 为空）'))
             : groups(tools, providers).map((group) => h(Group, {
               key: group.id,
               t,
@@ -330,7 +349,7 @@ window.__ModuleLoader__.load({
     }
 
     function Panel(props) {
-      return h(React.Fragment, null, h('style', null, STYLES), h(PanelInner, props))
+      return h(React.Fragment, null, h('style', null, STYLES), h(Boundary, null, h(PanelInner, props)))
     }
 
     return {

@@ -1,7 +1,7 @@
 {
   "meta": {
     "title": "dsh-web-hub",
-    "description": "Pick a search/fetch source and choose which of its tools the model gets.",
+    "description": "Provide search and fetch tools for DeepSeek Harness, with multiple providers and per-tool switches.",
     "detail": "docs/DETAIL.md"
   }
 }

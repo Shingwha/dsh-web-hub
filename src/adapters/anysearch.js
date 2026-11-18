@@ -95,10 +95,6 @@ const anysearch = {
   // Anonymous access works for every tool at lower rate limits, so a missing key
   // is a quality-of-service choice rather than a setup error.
   keyRequired: false,
-  summary: {
-    en: 'Hosted web and vertical search that also extracts pages as Markdown. Works anonymously; an API key raises the rate limits.',
-    zh: '托管网页检索与垂直检索，可把网页提取为 Markdown。可匿名调用，配置 API Key 可提高速率与限额。',
-  },
   tools: {
     search: {
       defaultOn: true,

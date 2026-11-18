@@ -36,6 +36,17 @@ github:Shingwha/dsh-web-hub
 
 停用或卸载插件即注销全部工具、恢复内置工具，不用改其它配置。
 
+## 代码结构
+
+```
+index.js              装配：挂内置屏蔽、挂工具
+src/config.js         配置 schema 与实时读取
+src/registry.js       注册表 → 工具定义、命名、准入
+src/builtin.js        屏蔽内置 web_search / web_fetch
+src/adapters/         每个搜索服务一个文件（唯一扩展点）
+client.js             Plugins 页面板
+```
+
 ## 加一个来源
 
 在 `src/adapters/` 里加一个文件，再到 `src/adapters/index.js` 登记一行。见 [docs/DETAIL.md](docs/DETAIL.md)。

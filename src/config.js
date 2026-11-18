@@ -1,17 +1,22 @@
 import z from '@deepseek-ai/schemastery'
 
+/** Settings applied when a provider omits them. */
+export const DEFAULTS = {
+  maxResults: 8,
+  timeoutMs: 30_000,
+}
+
 /**
- * The row config is the entire control plane.
+ * The row config is the whole control plane:
  *
- * - `active`        picks exactly one provider; an empty string mounts nothing.
- * - `providers`     holds provider-owned settings, never secrets.
- * - `tools`         is the per-tool switchboard keyed by the public tool name.
- * - `hideBuiltinWeb` masks the built-in web tools while this plugin is loaded.
+ * - `active`         the one provider whose tools are mounted ('' mounts none)
+ * - `tools`          per-tool switches keyed by public tool name
+ * - `providers`      provider-owned settings, never secrets
+ * - `hideBuiltinWeb` masks the built-in web tools while this plugin is loaded
  *
- * Every field is volatile. That is what makes the configuration surface exist
- * at all — the settings service only projects fields that can change without
- * remounting the plugin — and it lets a saved switch take effect on the next
- * model step instead of restarting the plugin.
+ * Every field is volatile. The settings service only projects volatile fields —
+ * a non-volatile Config yields no namespace at all — and volatility is also what
+ * lets a saved switch apply on the next model step instead of a restart.
  */
 export const Config = z.object({
   active: z.string().default('anysearch').volatile().description(
@@ -23,8 +28,8 @@ export const Config = z.object({
   providers: z.dict(z.object({
     baseURL: z.string().default(''),
     keyRef: z.string().default(''),
-    maxResults: z.number().default(8),
-    timeoutMs: z.number().default(30000),
+    maxResults: z.number().default(DEFAULTS.maxResults),
+    timeoutMs: z.number().default(DEFAULTS.timeoutMs),
   })).default({}).volatile().description(
     'Per-provider settings; only the provider named by `active` is mounted.',
   ),
@@ -33,71 +38,36 @@ export const Config = z.object({
   ),
 })
 
-export const DEFAULTS = {
-  maxResults: 8,
-  timeoutMs: 30000,
+/**
+ * Read one field, which is a live reference for a volatile field and a plain
+ * value when the plugin is composed outside the settings layer.
+ */
+function read(field, fallback) {
+  const value = field !== null && typeof field === 'object' && typeof field.get === 'function'
+    ? field.get()
+    : field
+  return value === undefined || value === null ? fallback : value
 }
 
 /**
- * A volatile config field arrives as a live reference; a plain value is also
- * accepted so the plugin still works when composed without the settings layer.
- * @param value - config field or plain value.
- * @param fallback - value used when the field is absent.
+ * Fresh readers over the row config. Nothing is snapshotted: a saved switch is
+ * visible to the next read, which is the next model step.
  */
-export function deref(value, fallback) {
-  if (value !== null && typeof value === 'object' && typeof value.get === 'function') {
-    const current = value.get()
-    return current === undefined ? fallback : current
-  }
-  return value === undefined ? fallback : value
-}
-
-/**
- * Live readers for the row config. Every read is fresh, so a saved switch is
- * visible to the next model step without restarting anything.
- * @param config - resolved plugin config.
- */
-export function live(config) {
+export function readers(config) {
   const value = config ?? {}
   return {
     active: () => {
-      const active = deref(value.active, 'anysearch')
+      const active = read(value.active, '')
       return typeof active === 'string' ? active.trim() : ''
     },
-    hideBuiltinWeb: () => deref(value.hideBuiltinWeb, true) !== false,
+    hideBuiltinWeb: () => read(value.hideBuiltinWeb, true) !== false,
     providers: () => {
-      const providers = deref(value.providers, {})
-      return providers !== null && typeof providers === 'object' ? providers : {}
+      const providers = read(value.providers, {})
+      return typeof providers === 'object' ? providers : {}
     },
     tools: () => {
-      const switches = deref(value.tools, {})
-      return switches !== null && typeof switches === 'object' ? switches : {}
+      const switches = read(value.tools, {})
+      return typeof switches === 'object' ? switches : {}
     },
   }
-}
-
-/**
- * Normalize one provider's settings so every tool sees the same shape.
- * @param provider - the `providers.<id>` entry from the row config.
- */
-export function providerConfig(provider) {
-  const value = provider ?? {}
-  return {
-    baseURL: typeof value.baseURL === 'string' ? value.baseURL.trim() : '',
-    keyRef: typeof value.keyRef === 'string' ? value.keyRef.trim() : '',
-    maxResults: Number.isFinite(value.maxResults) ? value.maxResults : DEFAULTS.maxResults,
-    timeoutMs: Number.isFinite(value.timeoutMs) && value.timeoutMs > 0 ? value.timeoutMs : DEFAULTS.timeoutMs,
-  }
-}
-
-/**
- * Whether one public tool name is switched on. An absent entry keeps the
- * adapter's own default, so a newly added tool needs no config edit.
- * @param switches - the `tools` map from the row config.
- * @param name - public tool name, `<provider>_<tool>`.
- * @param fallback - the adapter's default for this tool.
- */
-export function toolEnabled(switches, name, fallback) {
-  const value = switches[name]
-  return typeof value === 'boolean' ? value : fallback
 }

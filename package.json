@@ -1,6 +1,6 @@
 {
   "name": "dsh-web-hub",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "DeepSeek Harness plugin: hosts provider-owned search and fetch tools behind one switches panel.",
   "type": "module",
   "license": "MIT",
@@ -48,5 +48,13 @@
         "@deepseek-ai/dsh-api-remotes"
       ]
     }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Shingwha/dsh-web-hub.git"
+  },
+  "homepage": "https://github.com/Shingwha/dsh-web-hub#readme",
+  "bugs": {
+    "url": "https://github.com/Shingwha/dsh-web-hub/issues"
   }
 }

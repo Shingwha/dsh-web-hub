@@ -1,0 +1,24 @@
+# dsh-web-hub — hosts provider-owned search and fetch tools.
+#
+# `active` picks the one provider whose tools are mounted; every value under
+# `tools` is a per-tool switch keyed by the public name (`<provider>_<tool>`).
+# Provider settings stay under `providers.<id>`; secrets never appear here,
+# only `keyRef` names a credential in the harness credential store.
+- insert:
+    - id: web-hub
+      name: dsh-web-hub
+      config:
+        active: anysearch
+        hideBuiltinWeb: true
+        providers:
+          anysearch:
+            baseURL: 'https://api.anysearch.com/mcp'
+            keyRef: ANYSEARCH_API_KEY
+            maxResults: 8
+            timeoutMs: 30000
+        tools:
+          anysearch_search: true
+          anysearch_extract: true
+          anysearch_get_sub_domains: false
+          anysearch_batch_search: false
+          anysearch_score: false

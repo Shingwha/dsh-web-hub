@@ -1,0 +1,7 @@
+{
+  "meta": {
+    "title": "Web sources",
+    "description": "Hosts provider-owned search and fetch tools behind one switches panel; only one source is active at a time.",
+    "detail": "docs/DETAIL.md"
+  }
+}

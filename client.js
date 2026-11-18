@@ -210,13 +210,13 @@ window.__ModuleLoader__.load({
     }
 
     function KeyLine(props) {
-      const { t, ref, configured, busy, onSave, onClear, consoleURL } = props
+      const { t, keyRef, configured, busy, onSave, onClear, consoleURL } = props
       const [draft, setDraft] = React.useState('')
 
       return h('div', { className: 'hub-key' },
         h('div', { className: 'hub-key-main' },
           h('span', { className: 'hub-hint' }, t('keys')),
-          h('span', { className: 'hub-mono' }, ref),
+          h('span', { className: 'hub-mono' }, keyRef),
           h('span', { className: 'hub-hint' }, configured ? t('keySet') : t('keyUnset')),
           consoleURL.length > 0
             ? h('a', { className: 'hub-link', href: consoleURL, target: '_blank', rel: 'noreferrer noopener' }, t('getKey'))
@@ -275,7 +275,7 @@ window.__ModuleLoader__.load({
         keyRef.length > 0
           ? h(KeyLine, {
             t,
-            ref: keyRef,
+            keyRef,
             configured,
             busy,
             consoleURL,

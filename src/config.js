@@ -3,20 +3,21 @@ import z from '@deepseek-ai/schemastery'
 /**
  * The row config is the entire control plane.
  *
- * - `active`   picks exactly one provider; an empty string mounts nothing.
- * - `providers` holds provider-owned settings, never secrets.
- * - `tools`    is the per-tool switchboard keyed by the public tool name
- *              (`<provider>_<tool>`), so a provider can expose a subset.
+ * - `active`        picks exactly one provider; an empty string mounts nothing.
+ * - `providers`     holds provider-owned settings, never secrets.
+ * - `tools`         is the per-tool switchboard keyed by the public tool name.
+ * - `hideBuiltinWeb` masks the built-in web tools while this plugin is loaded.
  *
- * Every field is a normal (non-volatile) field: saving restarts this plugin so
- * `apply` rebuilds the mounted tool set. That keeps "what the model sees" and
- * "what the config says" identical at all times, with no partial states.
+ * Every field is volatile. That is what makes the configuration surface exist
+ * at all — the settings service only projects fields that can change without
+ * remounting the plugin — and it lets a saved switch take effect on the next
+ * model step instead of restarting the plugin.
  */
 export const Config = z.object({
-  active: z.string().default('anysearch').description(
+  active: z.string().default('anysearch').volatile().description(
     'Provider id whose tools are mounted. Empty turns every hub tool off.',
   ),
-  hideBuiltinWeb: z.boolean().default(true).description(
+  hideBuiltinWeb: z.boolean().default(true).volatile().description(
     'Hide the built-in web_search and web_fetch tools while this plugin is loaded.',
   ),
   providers: z.dict(z.object({
@@ -24,10 +25,10 @@ export const Config = z.object({
     keyRef: z.string().default(''),
     maxResults: z.number().default(8),
     timeoutMs: z.number().default(30000),
-  })).default({}).description(
+  })).default({}).volatile().description(
     'Per-provider settings; only the provider named by `active` is mounted.',
   ),
-  tools: z.dict(z.boolean()).default({}).description(
+  tools: z.dict(z.boolean()).default({}).volatile().description(
     'Per-tool switches keyed by public tool name, e.g. anysearch_search.',
   ),
 })
@@ -38,20 +39,54 @@ export const DEFAULTS = {
 }
 
 /**
- * Read the row config into the plain shape the runtime consumes.
- * @param config - validated row config, possibly `undefined` on a bare row.
- * @returns the selected provider (or undefined), its settings, and the switch map.
+ * A volatile config field arrives as a live reference; a plain value is also
+ * accepted so the plugin still works when composed without the settings layer.
+ * @param value - config field or plain value.
+ * @param fallback - value used when the field is absent.
  */
-export function resolve(config) {
+export function deref(value, fallback) {
+  if (value !== null && typeof value === 'object' && typeof value.get === 'function') {
+    const current = value.get()
+    return current === undefined ? fallback : current
+  }
+  return value === undefined ? fallback : value
+}
+
+/**
+ * Live readers for the row config. Every read is fresh, so a saved switch is
+ * visible to the next model step without restarting anything.
+ * @param config - resolved plugin config.
+ */
+export function live(config) {
   const value = config ?? {}
-  const providers = value.providers ?? {}
-  const active = typeof value.active === 'string' ? value.active.trim() : ''
-  const provider = active.length > 0 && Object.hasOwn(providers, active) ? providers[active] : undefined
   return {
-    active: provider === undefined ? '' : active,
-    provider: provider ?? {},
-    tools: value.tools ?? {},
-    hideBuiltinWeb: value.hideBuiltinWeb !== false,
+    active: () => {
+      const active = deref(value.active, 'anysearch')
+      return typeof active === 'string' ? active.trim() : ''
+    },
+    hideBuiltinWeb: () => deref(value.hideBuiltinWeb, true) !== false,
+    providers: () => {
+      const providers = deref(value.providers, {})
+      return providers !== null && typeof providers === 'object' ? providers : {}
+    },
+    tools: () => {
+      const switches = deref(value.tools, {})
+      return switches !== null && typeof switches === 'object' ? switches : {}
+    },
+  }
+}
+
+/**
+ * Normalize one provider's settings so every tool sees the same shape.
+ * @param provider - the `providers.<id>` entry from the row config.
+ */
+export function providerConfig(provider) {
+  const value = provider ?? {}
+  return {
+    baseURL: typeof value.baseURL === 'string' ? value.baseURL.trim() : '',
+    keyRef: typeof value.keyRef === 'string' ? value.keyRef.trim() : '',
+    maxResults: Number.isFinite(value.maxResults) ? value.maxResults : DEFAULTS.maxResults,
+    timeoutMs: Number.isFinite(value.timeoutMs) && value.timeoutMs > 0 ? value.timeoutMs : DEFAULTS.timeoutMs,
   }
 }
 

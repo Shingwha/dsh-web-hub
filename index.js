@@ -1,6 +1,6 @@
-import { Config, resolve } from './src/config.js'
-import { adapterFor } from './src/adapters/index.js'
-import { buildToolDefinitions, providerConfig } from './src/tools.js'
+import { adapters } from './src/adapters/index.js'
+import { Config, live } from './src/config.js'
+import { defineTool, isToolAdmitted } from './src/tools.js'
 import { hideBuiltinWeb } from './src/builtin.js'
 
 export { Config }
@@ -15,24 +15,23 @@ export const name = 'dsh-web-hub'
 export const inject = ['tools', 'agents', 'credentials']
 
 export function apply(ctx, config) {
-  const settings = resolve(config)
+  const settings = live(config)
 
-  ctx.effect(() => hideBuiltinWeb(ctx, settings.hideBuiltinWeb), 'dsh-web-hub: built-in web tools')
+  ctx.effect(() => hideBuiltinWeb(ctx, settings), 'dsh-web-hub: built-in web tools')
 
-  const adapter = adapterFor(settings.active)
-  if (adapter === undefined) {
-    ctx.logger?.info?.(
-      settings.active === ''
-        ? 'dsh-web-hub: no provider selected; no tools mounted'
-        : `dsh-web-hub: unknown provider "${settings.active}"; no tools mounted`,
-    )
-    return
-  }
-
-  const provider = providerConfig(settings.provider)
+  // Every known tool is registered once and admitted per model step by its
+  // `when` condition, so a saved switch needs no restart and no re-registration.
   ctx.effect(() => {
-    const definitions = buildToolDefinitions(ctx, adapter, provider, settings.tools)
-    const disposers = definitions.map((definition) => ctx.tools.register(definition))
+    const disposers = []
+    for (const adapter of Object.values(adapters)) {
+      for (const [tool, spec] of Object.entries(adapter.tools)) {
+        const publicName = `${adapter.id}_${tool}`
+        const definition = defineTool(ctx, adapter, spec, publicName, settings)
+        disposers.push(ctx.tools.register(definition, {
+          when: () => isToolAdmitted(settings, adapter, spec, publicName),
+        }))
+      }
+    }
     return () => {
       for (const dispose of disposers) {
         try {

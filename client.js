@@ -68,7 +68,7 @@ window.__ModuleLoader__.load({
       '.hub-side{display:flex;align-items:center;gap:8px;flex:none}',
       '.hub-link{color:var(--dsw-alias-brand-primary);text-decoration:none;white-space:nowrap}',
       '.hub-link:hover{text-decoration:underline}',
-      '.hub-key{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 16px 12px;border-top:1px dashed var(--dsw-alias-border-l2)}',
+      '.hub-key{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 16px;border-bottom:1px dashed var(--dsw-alias-border-l2)}',
       '.hub-key-main{display:flex;align-items:center;gap:8px;min-width:0;flex-wrap:wrap}',
       '.hub-foot{display:flex;align-items:center;justify-content:space-between;gap:10px}',
       '.hub-error{font-size:12px;color:var(--dsw-alias-state-error-primary,#d33)}',
@@ -262,16 +262,6 @@ window.__ModuleLoader__.load({
         h('div', { className: 'hub-group-head' },
           h('span', { className: 'hub-group-name' }, title),
           h('span', { className: 'hub-hint' }, status)),
-        group.names.map((name) => row(name,
-          name.indexOf('_') > 0 && /_(get_sub_domains|batch_search|score)$/.test(name)
-            ? h(UI.Tag, { tone: 'neutral' }, t('advanced'))
-            : null,
-          h(UI.Switch, {
-            checked: tools[name] === true,
-            label: name,
-            disabled: busy,
-            onChange: (next) => onToggle(tools, name, next),
-          }))),
         keyRef.length > 0
           ? h(KeyLine, {
             t,
@@ -282,7 +272,17 @@ window.__ModuleLoader__.load({
             onSave: (value) => onKey(keyRef, value, false),
             onClear: () => onKey(keyRef, '', true),
           })
-          : null)
+          : null,
+        group.names.map((name) => row(name,
+          name.indexOf('_') > 0 && /_(get_sub_domains|batch_search|score)$/.test(name)
+            ? h(UI.Tag, { tone: 'neutral' }, t('advanced'))
+            : null,
+          h(UI.Switch, {
+            checked: tools[name] === true,
+            label: name,
+            disabled: busy,
+            onChange: (next) => onToggle(tools, name, next),
+          }))))
     }
 
     /** Surfaces a render crash instead of letting React drop the whole card. */

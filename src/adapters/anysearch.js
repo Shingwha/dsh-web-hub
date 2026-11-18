@@ -146,7 +146,20 @@ const anysearch = {
         required: ['url'],
         additionalProperties: false,
       },
-      run: ({ cfg, key, args, signal }) => callTool(cfg, key, 'extract', { url: args.url }, signal),
+      run: async ({ cfg, key, args, signal }) => {
+        const text = await callTool(cfg, key, 'extract', { url: args.url }, signal)
+        // The endpoint answers with a JSON envelope { url, title, content } where
+        // `content` is Markdown; hand the model the page, not the envelope.
+        try {
+          const page = JSON.parse(text)
+          if (page && typeof page.content === 'string') {
+            const title = typeof page.title === 'string' && page.title.length > 0 ? `# ${page.title}\n\n` : ''
+            const source = typeof page.url === 'string' && page.url.length > 0 ? `Source: ${page.url}\n\n` : ''
+            return title + source + page.content
+          }
+        } catch {}
+        return text
+      },
     },
 
     get_sub_domains: {

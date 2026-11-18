@@ -157,9 +157,11 @@ window.__ModuleLoader__.load({
             setDraft(JSON.parse(JSON.stringify(value)))
             const ref = keyRefOf(value)
             if (ref.length === 0) { setKeyState(undefined); return }
-            const described = await remote.credentials.describe(ref)
+            // `describe` takes a batch of reference names and answers a map keyed by them.
+            const described = await remote.credentials.describe([ref])
             if (cancelled) return
-            setKeyState(described && described.ok ? described.value : undefined)
+            const map = described && described.ok ? described.value : undefined
+            setKeyState(map && typeof map === 'object' ? map[ref] : undefined)
           })
           .catch((reason) => { if (!cancelled) setError(errorMessage(reason) || t('loadError')) })
         return () => { cancelled = true }

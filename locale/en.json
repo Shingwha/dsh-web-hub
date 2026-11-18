@@ -1,7 +1,7 @@
 {
   "meta": {
-    "title": "Web sources",
-    "description": "Hosts provider-owned search and fetch tools behind one switches panel; only one source is active at a time.",
+    "title": "dsh-web-hub",
+    "description": "Pick a search/fetch source and choose which of its tools the model gets.",
     "detail": "docs/DETAIL.md"
   }
 }

@@ -1,7 +1,7 @@
 {
   "meta": {
-    "title": "网页来源",
-    "description": "把各搜索/抓取服务自有的工具挂进来，用一块面板统一开关；同一时刻只有一个来源生效。",
+    "title": "dsh-web-hub",
+    "description": "选择用哪个搜索/抓取服务，并决定开放哪些工具。",
     "detail": "docs/DETAIL.md"
   }
 }

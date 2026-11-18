@@ -28,6 +28,7 @@ export const Config = z.object({
   providers: z.dict(z.object({
     baseURL: z.string().default(''),
     keyRef: z.string().default(''),
+    consoleURL: z.string().default(''),
     maxResults: z.number().default(DEFAULTS.maxResults),
     timeoutMs: z.number().default(DEFAULTS.timeoutMs),
   })).default({}).volatile().description(

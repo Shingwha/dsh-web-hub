@@ -423,6 +423,8 @@ window.__ModuleLoader__.load({
       '.wh-card-summary{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12.5px;line-height:1.5}',
       '.wh-card-link{color:var(--dsw-alias-link);text-decoration:none}',
       '.wh-card-row:hover .wh-card-link{text-decoration:underline}',
+      '.wh-card-marks{display:inline-flex;align-items:center;gap:4px;flex:none}',
+      '.wh-card-more{font-size:10px;line-height:1.5;color:var(--dsw-alias-label-tertiary)}',
       '.wh-card-meta{flex:none;margin-left:auto;font-size:11px;line-height:1.5;color:var(--dsw-alias-label-tertiary);font-variant-numeric:tabular-nums}',
       '.wh-card-failed .wh-card-meta{color:inherit}',
       '.wh-card-chevron{flex:none;display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;margin:0;padding:0;border:0;background:none;color:inherit;cursor:pointer;transition:transform .12s ease}',
@@ -488,6 +490,19 @@ window.__ModuleLoader__.load({
       let hash = 0
       for (let index = 0; index < host.length; index += 1) hash = (hash * 31 + host.charCodeAt(index)) % 360
       return hash
+    }
+
+    /** Distinct result hosts in order, for the marks shown before expanding. */
+    function distinctHosts(sources) {
+      const seen = new Set()
+      const hosts = []
+      for (const source of sources) {
+        const host = hostOf(source.url)
+        if (seen.has(host)) continue
+        seen.add(host)
+        hosts.push(host)
+      }
+      return hosts
     }
 
     /** Whether a value is a URL the browser can open and read a host from. */
@@ -690,6 +705,9 @@ window.__ModuleLoader__.load({
       const query = args !== undefined && typeof args.query === 'string' ? args.query : ''
       const url = args !== undefined && typeof args.url === 'string' ? args.url : ''
       const count = card !== undefined && card.kind === 'search' ? t('cardCount', { count: card.sources.length }) : ''
+      const hosts = card !== undefined && card.kind === 'search' ? distinctHosts(card.sources) : []
+      const marks = hosts.slice(0, 3)
+      const extraHosts = hosts.length - marks.length
       const status = failed ? t('cardFailed') : running ? t('cardRunning') : count
       const expandable = !running && (card !== undefined || text.length > 0)
       const toggle = () => { if (expandable) setOpen(value => !value) }
@@ -717,6 +735,11 @@ window.__ModuleLoader__.load({
               onClick: event => event.stopPropagation(),
             }, displayUrl(url))
             : null),
+        kind === 'search' && marks.length > 0
+          ? h('span', { className: 'wh-card-marks' },
+            marks.map(host => h(SiteIcon, { key: host, url: `https://${host}`, size: 14 })),
+            extraHosts > 0 ? h('span', { className: 'wh-card-more' }, `+${extraHosts}`) : null)
+          : null,
         h('span', { className: 'wh-card-meta' }, status),
         expandable
           ? h('button', {

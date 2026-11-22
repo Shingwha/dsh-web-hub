@@ -23,6 +23,7 @@ window.__ModuleLoader__.load({
       keyClear: '清除',
       keySet: '已配置',
       keyUnset: '未配置',
+      needKey: '需 API Key',
       keyFree: '免 key',
       keySetUp: '设置',
       keyChange: '更换',
@@ -58,6 +59,7 @@ window.__ModuleLoader__.load({
       keyClear: 'Clear',
       keySet: 'set',
       keyUnset: 'not set',
+      needKey: 'needs API key',
       keyFree: 'keyless',
       keySetUp: 'set up',
       keyChange: 'change',
@@ -96,6 +98,8 @@ window.__ModuleLoader__.load({
       '.wh-panel>*+*{border-top:0.5px solid var(--dsw-alias-border-l2)}',
       '.wh-row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 0}',
       '.wh-name{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px;line-height:1.5}',
+      '.wh-row-label{display:flex;align-items:center;gap:8px;min-width:0}',
+      '.wh-note{font-size:10.5px;font-weight:500;line-height:1.6;padding:0 5px;border-radius:4px;background:rgba(180,105,14,0.14);color:var(--dsw-alias-state-warning-primary,#b4690e);white-space:nowrap}',
       '.wh-hint{margin:0;font-size:12px;line-height:1.5;color:var(--dsw-alias-label-tertiary)}',
       '.wh-keyrow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0}',
       '.wh-keyrow-main{display:flex;align-items:center;gap:8px;min-width:0}',
@@ -422,11 +426,26 @@ window.__ModuleLoader__.load({
       return id.charAt(0).toUpperCase() + id.slice(1)
     }
 
-    /** Every tool name that renders through the search card. */
-    const SEARCH_TOOLS = ['anysearch_search']
+    /**
+     * Every tool that renders through a card, with the card it gets. Search and
+     * fetch are the only shapes so far: a list of sources, or one page.
+     */
+    const CARD_KINDS = {
+      anysearch_search: 'search',
+      anysearch_batch_search: 'search',
+      exa_search: 'search',
+      tavily_search: 'search',
+      tavily_crawl: 'search',
+      tavily_map: 'search',
+      firecrawl_search: 'search',
+      anysearch_extract: 'fetch',
+      exa_extract: 'fetch',
+      tavily_extract: 'fetch',
+      firecrawl_extract: 'fetch',
+    }
 
-    /** Every tool name that renders through the fetch card. */
-    const EXTRACT_TOOLS = ['anysearch_extract']
+    /** Tools that only answer with a provider key; the panel says so when it is unset. */
+    const KEY_ONLY = new Set(['tavily_crawl', 'tavily_map', 'tavily_research'])
 
     /** Card rules live with the card: the chat never mounts the plugin panel. */
     const CARD_STYLES = [
@@ -695,7 +714,10 @@ window.__ModuleLoader__.load({
       const text = resultText(block)
       const running = phase !== 'result'
       const failed = phase === 'result' && block !== undefined && block !== null && block.isError === true
-      const query = args !== undefined && typeof args.query === 'string' ? args.query : ''
+      const query = args !== undefined && typeof args.query === 'string'
+        ? args.query
+        : (Array.isArray(args?.queries) && typeof args.queries[0] === 'string' ? args.queries[0] : '')
+      const extraQueries = Array.isArray(args?.queries) && args.queries.length > 1 ? args.queries.length - 1 : 0
       const url = args !== undefined && typeof args.url === 'string' ? args.url : ''
       const count = card !== undefined && card.kind === 'search' ? t('cardCount', { count: card.sources.length }) : ''
       const hosts = card !== undefined && card.kind === 'search' ? distinctHosts(card.sources) : []
@@ -727,9 +749,10 @@ window.__ModuleLoader__.load({
         h('span', { className: 'wh-card-label' },
           t(kind === 'search' ? 'cardSearch' : 'cardExtract'),
           h('span', { className: 'wh-card-provider' }, ` · ${providerTitle(toolName)}`)),
-        kind === 'search'
-          ? (query.length > 0 ? h('span', { className: 'wh-card-summary' }, query) : null)
-          : (url.length > 0
+        query.length > 0
+          ? h('span', { className: 'wh-card-summary' },
+            extraQueries > 0 ? `${query} +${extraQueries}` : query)
+          : (hasHttpUrl(url)
             ? h('a', {
               className: 'wh-card-summary wh-card-link',
               href: url,
@@ -775,9 +798,11 @@ window.__ModuleLoader__.load({
     }
 
     function ToolRow(props) {
-      const { name, checked, busy, onToggle } = props
+      const { t, name, checked, busy, keyOnly, onToggle } = props
       return h('div', { className: 'wh-row' },
-        h('span', { className: 'wh-name' }, name),
+        h('span', { className: 'wh-row-label' },
+          h('span', { className: 'wh-name' }, name),
+          keyOnly === true ? h('span', { className: 'wh-note' }, t('needKey')) : null),
         h(UI.Switch, {
           checked,
           label: name,
@@ -811,9 +836,11 @@ window.__ModuleLoader__.load({
         h('div', { className: 'wh-panel' },
           group.names.map(name => h(ToolRow, {
             key: name,
+            t,
             name,
             checked: enabled(name, tools),
             busy,
+            keyOnly: KEY_ONLY.has(name) && !configured,
             onToggle,
           })),
           keyRef.length > 0
@@ -890,11 +917,11 @@ window.__ModuleLoader__.load({
           'dsh-web-hub: reconnect refresh',
         )
         ctx.slots.inject('tool.call.toolview', function* () {
-          for (const name of SEARCH_TOOLS) {
-            yield ctx.slots.register({ name: 'tool.call.toolview', key: name, locale: NS }, SearchCard)
-          }
-          for (const name of EXTRACT_TOOLS) {
-            yield ctx.slots.register({ name: 'tool.call.toolview', key: name, locale: NS }, ExtractCard)
+          for (const [tool, kind] of Object.entries(CARD_KINDS)) {
+            yield ctx.slots.register(
+              { name: 'tool.call.toolview', key: tool, locale: NS },
+              kind === 'search' ? SearchCard : ExtractCard,
+            )
           }
         })
         ctx.slots.inject('plugins.bundle.config', () => ctx.slots.register({

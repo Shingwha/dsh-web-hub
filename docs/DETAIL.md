@@ -26,6 +26,8 @@
 
 唯一的例外是 Firecrawl 的 `firecrawl_parse`：托管端点要求两阶段文件上传（先取上传指令、本地 PUT、再用 `uploadRef` 调用），我们的单次 `tools/call` 传输无法完成，因此不暴露。
 
+Tavily 的 `crawl` / `map` / `research` 需要 API key（免 key 只覆盖 search 与 extract）；面板在 key 未配置时给这些工具标 `需 API Key`。
+
 ## 工具结果的两条投影
 
 每个工具返回 `{ text, meta }`：
@@ -35,7 +37,7 @@
 
 `meta` 形状对齐内置 `web_search`：搜索是 `{ truncated, sources: [{ url, title?, snippet?, publishedAt? }], answer? }`，抓取是 `{ truncated, url, statusCode }`。
 
-面板之外的会话卡片由 `client.js` 注册到 `tool.call.toolview`（按 wire 工具名索引），用内置同款原语 `DisclosureRow` + `WebBlock` 渲染；`meta` 缺失或畸形时退回纯文本，原语缺失时退回自绘行。
+会话卡片由 `client.js` 注册到 `tool.call.toolview`（按 wire 工具名索引），覆盖四个来源的 search / extract 以及 Tavily 的 crawl / map：搜索卡展开是来源列表，抓取卡是单行链接。`meta` 缺失或畸形时退回纯文本，卡片自身抛错也不会白屏。
 
 ## 加来源
 

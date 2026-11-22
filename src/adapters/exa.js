@@ -1,4 +1,5 @@
 import { callTool } from './mcp.js'
+import { fetchResult, searchResult } from './sources.js'
 
 /**
  * Exa — hosted MCP, no API key required.
@@ -11,6 +12,35 @@ function sender(cfg, key) {
   const headers = { 'x-exa-client': CLIENT }
   if (key) headers.authorization = `Bearer ${key}`
   return (name, args, signal) => callTool({ url: cfg.baseURL, headers, name, args, signal })
+}
+
+
+/**
+ * Split Exa's formatted text into sources. Its MCP tool renders one block per
+ * result as `Title:` / `URL:` / `Published:` / `Author:` / `Highlights:` lines,
+ * so this is the only place that knows that layout.
+ */
+function parseSources(text) {
+  const items = []
+  for (const block of text.split(/^Title:\s*/m).slice(1)) {
+    const lines = block.split(/\r?\n/)
+    const title = lines[0].trim()
+    const urlLine = lines.find(line => line.startsWith('URL:'))
+    if (urlLine === undefined) continue
+    const url = urlLine.slice(4).trim()
+    if (url.length === 0) continue
+    const publishedLine = lines.find(line => line.startsWith('Published:'))
+    const published = publishedLine === undefined ? '' : publishedLine.slice(10).trim()
+    const highlight = lines.findIndex(line => line.startsWith('Highlights:'))
+    const body = highlight === -1 ? '' : lines.slice(highlight + 1).join(' ').trim()
+    items.push({
+      url,
+      ...title.length > 0 ? { title } : {},
+      ...body.length > 0 ? { snippet: body.slice(0, 800) } : {},
+      ...published.length > 0 && !/^n\/a$/i.test(published) ? { publishedAt: published } : {},
+    })
+  }
+  return items
 }
 
 /** @type {import('./index.js').Adapter} */
@@ -40,11 +70,14 @@ const exa = {
         required: ['query'],
         additionalProperties: false,
       },
-      run: ({ cfg, key, args, signal }) => sender(cfg, key)('web_search_exa', {
-        query: args.query,
-        numResults: typeof args.max_results === 'number' ? args.max_results : cfg.maxResults,
-        objective: args.query,
-      }, signal),
+      run: async ({ cfg, key, args, signal }) => {
+        const text = await sender(cfg, key)('web_search_exa', {
+          query: args.query,
+          numResults: typeof args.max_results === 'number' ? args.max_results : cfg.maxResults,
+          objective: args.query,
+        }, signal)
+        return searchResult({ items: parseSources(text), raw: text })
+      },
     },
 
     extract: {
@@ -57,10 +90,13 @@ const exa = {
         required: ['url'],
         additionalProperties: false,
       },
-      run: ({ cfg, key, args, signal }) => sender(cfg, key)('web_fetch_exa', {
-        urls: [args.url],
-        maxCharacters: 50_000,
-      }, signal),
+      run: async ({ cfg, key, args, signal }) => {
+        const text = await sender(cfg, key)('web_fetch_exa', {
+          urls: [args.url],
+          maxCharacters: 50_000,
+        }, signal)
+        return fetchResult({ text, url: args.url, truncated: text.length >= 50_000 })
+      },
     },
   },
 }

@@ -1,4 +1,5 @@
 import { callTool } from './mcp.js'
+import { fetchResult, searchResult, sources } from './sources.js'
 
 /**
  * Tavily — hosted MCP. Keyless access is selected by a header and is rate
@@ -13,18 +14,6 @@ function sender(cfg, key) {
   if (key) headers.authorization = `Bearer ${key}`
   else headers['x-tavily-access-mode'] = 'keyless'
   return (name, args, signal) => callTool({ url: cfg.baseURL, headers, name, args, signal })
-}
-
-/** Turn one result list into the numbered text the model reads. */
-function formatResults(title, items) {
-  const lines = items.map((item, index) => {
-    const head = `${index + 1}. ${item.title ?? item.url ?? ''}`
-    const url = item.url ? `\n   ${item.url}` : ''
-    const body = item.content ?? item.raw_content ?? ''
-    const excerpt = typeof body === 'string' && body.length > 0 ? `\n   ${body.slice(0, 500).replace(/\n+/g, ' ')}` : ''
-    return head + url + excerpt
-  })
-  return `${title}\n\n${lines.join('\n\n')}`
 }
 
 /**
@@ -44,6 +33,29 @@ function unwrap(text) {
     throw new Error(`${code}${retry}: ${payload.message ?? 'request refused'}`)
   }
   return payload
+}
+
+
+/**
+ * Read a Tavily list payload into sources. Crawl returns pages and map returns
+ * URLs; both answer with a `results` array, whose items may be strings or
+ * objects, so this narrows either shape and leaves an unknown one empty.
+ */
+function listSources(text) {
+  let payload
+  try {
+    payload = JSON.parse(text)
+  } catch {
+    return []
+  }
+  const list = Array.isArray(payload?.results) ? payload.results
+    : Array.isArray(payload?.urls) ? payload.urls
+      : Array.isArray(payload?.data) ? payload.data : []
+  return sources(list.map(item => (typeof item === 'string' ? { url: item } : {
+    url: item?.url,
+    title: item?.title ?? item?.metadata?.title,
+    snippet: item?.raw_content ?? item?.content ?? item?.markdown,
+  })))
 }
 
 /** @type {import('./index.js').Adapter} */
@@ -79,11 +91,11 @@ const tavily = {
           max_results: typeof args.max_results === 'number' ? args.max_results : cfg.maxResults,
         }, signal)
         const payload = unwrap(text)
-        if (Array.isArray(payload?.results)) {
-          const answer = typeof payload.answer === 'string' && payload.answer.length > 0 ? `${payload.answer}\n\n` : ''
-          return answer + formatResults('Search results', payload.results)
-        }
-        return text
+        return searchResult({
+          items: sources(payload?.results),
+          answer: payload?.answer,
+          raw: text,
+        })
       },
     },
 
@@ -105,11 +117,11 @@ const tavily = {
         const payload = unwrap(text)
         const page = Array.isArray(payload?.results) ? payload.results[0] : undefined
         if (page && typeof page.raw_content === 'string') {
-          return `${args.url}\n\n${page.raw_content}`
+          return fetchResult({ text: `${args.url}\n\n${page.raw_content}`, url: args.url })
         }
         const failed = Array.isArray(payload?.failed_results) ? payload.failed_results[0] : undefined
         if (failed) throw new Error(failed.error ?? 'extraction failed')
-        return text
+        return fetchResult({ text, url: args.url })
       },
     },
 
@@ -148,7 +160,10 @@ const tavily = {
         required: ['url'],
         additionalProperties: false,
       },
-      run: ({ cfg, key, args, signal }) => sender(cfg, key)('tavily_crawl', args, signal),
+      run: async ({ cfg, key, args, signal }) => {
+        const text = await sender(cfg, key)('tavily_crawl', args, signal)
+        return searchResult({ items: listSources(text), raw: text })
+      },
     },
 
     map: {
@@ -176,7 +191,10 @@ const tavily = {
         required: ['url'],
         additionalProperties: false,
       },
-      run: ({ cfg, key, args, signal }) => sender(cfg, key)('tavily_map', args, signal),
+      run: async ({ cfg, key, args, signal }) => {
+        const text = await sender(cfg, key)('tavily_map', args, signal)
+        return searchResult({ items: listSources(text), raw: text })
+      },
     },
 
     research: {

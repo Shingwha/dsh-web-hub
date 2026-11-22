@@ -1,4 +1,5 @@
 import { callTool } from './mcp.js'
+import { fetchResult, searchResult, sources } from './sources.js'
 
 /**
  * Firecrawl — hosted MCP. Page scraping works without a key; search may answer
@@ -62,19 +63,7 @@ const firecrawl = {
           objective: args.query,
         }, signal)
         const payload = unwrap(text)
-        const items = payload?.data?.web
-        if (Array.isArray(items)) {
-          const lines = items.map((item, index) => {
-            const head = `${index + 1}. ${item.title ?? item.url ?? ''}`
-            const url = item.url ? `\n   ${item.url}` : ''
-            const body = typeof item.description === 'string' && item.description.length > 0
-              ? `\n   ${item.description.slice(0, 500).replace(/\n+/g, ' ')}`
-              : ''
-            return head + url + body
-          })
-          return `Search results\n\n${lines.join('\n\n')}`
-        }
-        return text
+        return searchResult({ items: sources(payload?.data?.web), raw: text })
       },
     },
 
@@ -98,9 +87,13 @@ const firecrawl = {
         const payload = unwrap(text)
         if (typeof payload?.markdown === 'string') {
           const title = typeof payload.metadata?.title === 'string' ? `# ${payload.metadata.title}\n\n` : ''
-          return `${title}${args.url}\n\n${payload.markdown}`
+          return fetchResult({
+            text: `${title}${args.url}\n\n${payload.markdown}`,
+            url: typeof payload.metadata?.sourceURL === 'string' ? payload.metadata.sourceURL : args.url,
+            statusCode: Number.isInteger(payload.metadata?.statusCode) ? payload.metadata.statusCode : 200,
+          })
         }
-        return text
+        return fetchResult({ text, url: args.url })
       },
     },
   },

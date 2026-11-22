@@ -415,14 +415,14 @@ window.__ModuleLoader__.load({
     const CARD_STYLES = [
       '.wh-card{display:flex;flex-direction:column;gap:2px;color:var(--dsw-alias-label-tertiary)}',
       '.wh-card-row{display:flex;align-items:center;gap:8px;min-height:24px;padding:2px 0;border-radius:4px}',
-      '.wh-card-row{cursor:pointer}',
-      '.wh-card-row:hover{color:var(--dsw-alias-label-secondary)}',
+      '.wh-card-row[data-expandable=true]{cursor:pointer}',
+      '.wh-card-row[data-expandable=true]:hover{color:var(--dsw-alias-label-secondary)}',
       '.wh-card-failed{color:var(--dsw-alias-state-error-primary)}',
       '.wh-card-icon{flex:none;display:inline-flex;align-items:center;color:currentColor}',
       '.wh-card-label{flex:none;font-size:12.5px;line-height:1.5;color:var(--dsw-alias-label-secondary)}',
       '.wh-card-summary{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12.5px;line-height:1.5}',
       '.wh-card-link{color:var(--dsw-alias-link);text-decoration:none}',
-      '.wh-card-row:hover .wh-card-link{text-decoration:underline}',
+      '.wh-card-link:hover{text-decoration:underline}',
       '.wh-card-marks{display:inline-flex;align-items:center;gap:4px;flex:none}',
       '.wh-card-more{font-size:10px;line-height:1.5;color:var(--dsw-alias-label-tertiary)}',
       '.wh-card-meta{flex:none;margin-left:auto;font-size:11px;line-height:1.5;color:var(--dsw-alias-label-tertiary);font-variant-numeric:tabular-nums}',
@@ -431,7 +431,6 @@ window.__ModuleLoader__.load({
       '.wh-card-chevron[aria-expanded=true]{transform:rotate(180deg)}',
       '.wh-card-body{display:flex;flex-direction:column;gap:10px;padding:4px 0 10px 22px}',
       '.wh-card-empty{margin:0;font-size:12px;line-height:1.5;color:var(--dsw-alias-label-tertiary)}',
-      '.wh-card-preview{margin:0;font-size:12px;line-height:1.55;color:var(--dsw-alias-label-secondary);overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical}',
       '.wh-card-text{margin:0;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;line-height:1.6;white-space:pre-wrap;overflow-wrap:anywhere;color:var(--dsw-alias-label-secondary)}',
       '.wh-item{display:flex;gap:8px;min-width:0}',
       '.wh-item-mark{display:inline-flex;flex:none;margin-top:1px}',
@@ -621,14 +620,6 @@ window.__ModuleLoader__.load({
       return { kind: 'fetch', url: meta.url, statusCode: meta.statusCode, truncated: meta.truncated }
     }
 
-    /** Drop the title and source lines a fetched page starts with. */
-    function pageBody(text) {
-      return text
-        .replace(/^#[^\n]*\n+/, '')
-        .replace(/^Source:[^\n]*\n+/, '')
-        .trim()
-    }
-
     /** One source list entry. */
     function SourceItem(props) {
       const { source } = props
@@ -646,7 +637,7 @@ window.__ModuleLoader__.load({
             : null))
     }
 
-    /** The opened body: source entries, a page preview, or the raw text. */
+    /** The opened body: source entries, or the raw text when they are unknown. */
     function CardBody(props) {
       const { t, kind, card, text } = props
       if (card !== undefined && kind === 'search') {
@@ -655,22 +646,6 @@ window.__ModuleLoader__.load({
             ? h('p', { className: 'wh-card-empty' }, t('cardNoResults'))
             : card.sources.map((source, index) => h(SourceItem, { key: index, source })),
           card.truncated ? h('p', { className: 'wh-card-empty' }, t('cardSourcesTruncated')) : null)
-      }
-      if (card !== undefined && kind === 'fetch') {
-        const status = `HTTP ${card.statusCode}${card.truncated ? ` · ${t('cardContentTruncated')}` : ''}`
-        const preview = pageBody(text)
-        return h('div', { className: 'wh-card-body' },
-          h('div', { className: 'wh-item' },
-            h('span', { className: 'wh-item-mark' }, h(SiteIcon, { url: card.url })),
-            h('div', { className: 'wh-item-main' },
-              h('a', {
-                className: 'wh-item-title',
-                href: card.url,
-                target: '_blank',
-                rel: 'noreferrer noopener',
-              }, displayUrl(card.url)),
-              h('span', { className: 'wh-item-meta' }, status))),
-          preview.length > 0 ? h('p', { className: 'wh-card-preview' }, preview) : null)
       }
       return h('div', { className: 'wh-card-body' },
         text.length === 0 ? null : h('pre', { className: 'wh-card-text' }, text))
@@ -708,8 +683,14 @@ window.__ModuleLoader__.load({
       const hosts = card !== undefined && card.kind === 'search' ? distinctHosts(card.sources) : []
       const marks = hosts.slice(0, 3)
       const extraHosts = hosts.length - marks.length
-      const status = failed ? t('cardFailed') : running ? t('cardRunning') : count
-      const expandable = !running && (card !== undefined || text.length > 0)
+      // A search opens to its sources; a fetch is one line, because the row already
+      // names the page and links to it. Only a failure opens, to show its error.
+      const expandable = failed
+        ? text.length > 0
+        : kind === 'search' && !running && (card !== undefined || text.length > 0)
+      const status = failed
+        ? t('cardFailed')
+        : running ? t('cardRunning') : (kind === 'search' ? count : '')
       const toggle = () => { if (expandable) setOpen(value => !value) }
 
       // The row itself is only a pointer convenience; the chevron is the real
@@ -717,6 +698,7 @@ window.__ModuleLoader__.load({
       // they can read, and the URL keeps its own link semantics.
       const row = h('div', {
         className: failed ? 'wh-card-row wh-card-failed' : 'wh-card-row',
+        'data-expandable': expandable,
         onClick: expandable ? toggle : undefined,
       },
         h('span', { className: 'wh-card-icon' },

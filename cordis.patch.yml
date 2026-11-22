@@ -7,7 +7,7 @@
 # `web_search` / `web_fetch` are managed here like any provider tool.
 #
 # Every provider below answers without a key. A key raises that provider's
-# limits; the one tool that refuses keyless calls is `parallel_research`.
+# limits, and every keyless connection is rate limited.
 - insert:
     - id: web-hub
       name: dsh-web-hub
@@ -41,13 +41,6 @@
             consoleURL: 'https://www.firecrawl.dev/app/api-keys'
             maxResults: 8
             timeoutMs: 60000
-          parallel:
-            title: Parallel
-            baseURL: 'https://mcp.parallel.ai/mcp'
-            keyRef: PARALLEL_API_KEY
-            consoleURL: 'https://platform.parallel.ai'
-            maxResults: 8
-            timeoutMs: 60000
         tools:
           # Built-ins stay on: installing this plugin must not remove a tool
           # the model could already use. Everything else is opt-in.
@@ -64,9 +57,3 @@
           tavily_extract: false
           firecrawl_search: false
           firecrawl_extract: false
-          # Parallel answers keyless for search and fetch; research refuses
-          # until PARALLEL_API_KEY is configured, so it stays opt-in.
-          parallel_search: false
-          parallel_fetch: false
-          parallel_research: false
-          parallel_image_search: false

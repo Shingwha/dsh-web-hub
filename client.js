@@ -9,16 +9,6 @@ window.__ModuleLoader__.load({
     // The Loader entry id is also the settings namespace of this row.
     const SETTINGS = 'web-hub'
     const BUILTIN_PREFIX = 'web_'
-    /**
-     * Tools that cannot run without a credential. The panel sees tool names
-     * only, so this mirrors the adapters' own `keyRequired` — keep it in sync
-     * with src/adapters. Such a tool also keeps its switch disabled until its
-     * group's key is saved.
-     */
-    const TOOL_NOTES = {
-      parallel_research: 'needKey',
-      parallel_image_search: 'needKey',
-    }
 
     const zh = {
       tools: '工具',
@@ -37,7 +27,6 @@ window.__ModuleLoader__.load({
       keySetUp: '设置',
       keyChange: '更换',
       keyCancel: '取消',
-      needKey: '需 key',
       reload: '重新读取',
       loadError: '读取配置失败。',
       saveError: '保存失败。',
@@ -63,7 +52,6 @@ window.__ModuleLoader__.load({
       keySetUp: 'set up',
       keyChange: 'change',
       keyCancel: 'cancel',
-      needKey: 'needs key',
       reload: 'Reload',
       loadError: 'Could not read the configuration.',
       saveError: 'Could not save.',
@@ -87,8 +75,6 @@ window.__ModuleLoader__.load({
       '.wh-panel{padding:0 16px;border-radius:var(--dsw-radius-md);background:var(--dsw-alias-bg-module-platform)}',
       '.wh-panel>*+*{border-top:0.5px solid var(--dsw-alias-border-l2)}',
       '.wh-row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 0}',
-      '.wh-row-label{display:flex;align-items:center;gap:8px;min-width:0}',
-      '.wh-note{font-size:11px;font-weight:500;line-height:1.6;padding:0 6px;border-radius:4px;background:rgba(180,105,14,0.14);color:var(--dsw-alias-state-warning-primary,#b4690e);white-space:nowrap}',
       '.wh-name{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px;line-height:1.5}',
       '.wh-hint{margin:0;font-size:12px;line-height:1.5;color:var(--dsw-alias-label-tertiary)}',
       '.wh-keyrow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0}',
@@ -392,14 +378,9 @@ window.__ModuleLoader__.load({
     }
 
     function ToolRow(props) {
-      const { t, name, checked, busy, onToggle } = props
-      // Annotation only: the row still toggles, and a keyless call fails with
-      // the provider's own error rather than a guess made here.
-      const note = TOOL_NOTES[name]
+      const { name, checked, busy, onToggle } = props
       return h('div', { className: 'wh-row' },
-        h('span', { className: 'wh-row-label' },
-          h('span', { className: 'wh-name' }, name),
-          note === undefined ? null : h('span', { className: 'wh-note' }, t(note))),
+        h('span', { className: 'wh-name' }, name),
         h(UI.Switch, {
           checked,
           label: name,
@@ -433,7 +414,6 @@ window.__ModuleLoader__.load({
         h('div', { className: 'wh-panel' },
           group.names.map(name => h(ToolRow, {
             key: name,
-            t,
             name,
             checked: enabled(name, tools),
             busy,

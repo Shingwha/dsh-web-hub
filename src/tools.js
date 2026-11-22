@@ -60,9 +60,7 @@ function definition(ctx, adapter, tool, name, settings) {
     name,
     description: tool.description,
     parameters: tool.parameters,
-    // A tool may legitimately run longer than a fast query (research), so its
-    // own limit wins over the provider-wide one.
-    timeoutMs: tool.timeoutMs ?? providerSettings(settings, adapter).timeoutMs,
+    timeoutMs: providerSettings(settings, adapter).timeoutMs,
     output: {
       schema: { type: 'string' },
       render: (_args, value) => [{ type: 'text', text: typeof value === 'string' ? value : String(value ?? '') }],

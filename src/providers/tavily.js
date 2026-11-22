@@ -1,24 +1,16 @@
-import { callTool } from './mcp.js'
-import { fetchResult, searchResult, sources } from './sources.js'
-
 /**
- * Tavily — hosted MCP. Keyless access is selected by a header and is rate
- * limited per day; an API key switches to the account's limits without
- * changing any tool.
+ * Tavily — hosted MCP with keyless search and extract.
+ *
+ * Keyless access is selected by a header and is capped per day; crawl, map, and
+ * research need a key. Responses are JSON, so this file only narrows them.
  */
 
-const CLIENT = 'dsh-web-hub/0.4.0'
-
-function sender(cfg, key) {
-  const headers = { 'x-tavily-client': CLIENT }
-  if (key) headers.authorization = `Bearer ${key}`
-  else headers['x-tavily-access-mode'] = 'keyless'
-  return (name, args, signal) => callTool({ url: cfg.baseURL, headers, name, args, signal })
-}
+import { fetchResult, searchResult, sources } from '../sources.js'
+import { bearer, requestHeaders } from '../transport.js'
 
 /**
- * Tavily reports a keyless daily cap as a normal JSON payload rather than an
- * error, so surface it as one instead of handing the model a code blob.
+ * Tavily reports a keyless cap as a normal payload rather than an HTTP failure,
+ * so surface its `code` as an error instead of handing the model a JSON blob.
  */
 function unwrap(text) {
   let payload
@@ -27,27 +19,26 @@ function unwrap(text) {
   } catch {
     return undefined
   }
-  const code = payload?.code
-  if (typeof code === 'string' && code.length > 0) {
+  if (typeof payload?.code === 'string' && payload.code.length > 0) {
     const retry = typeof payload.retry_after === 'number' ? ` (retry after ${payload.retry_after}s)` : ''
-    throw new Error(`${code}${retry}: ${payload.message ?? 'request refused'}`)
+    throw new Error(`${payload.code}${retry}: ${payload.message ?? 'request refused'}`)
   }
   return payload
 }
 
-
 /**
  * Read a Tavily list payload into sources. Crawl returns pages and map returns
- * URLs; both answer with a `results` array, whose items may be strings or
+ * URLs; both answer with a `results` array whose items may be strings or
  * objects, so this narrows either shape and leaves an unknown one empty.
  */
 function listSources(text) {
-  let payload
-  try {
-    payload = JSON.parse(text)
-  } catch {
-    return []
-  }
+  const payload = (() => {
+    try {
+      return JSON.parse(text)
+    } catch {
+      return undefined
+    }
+  })()
   const list = Array.isArray(payload?.results) ? payload.results
     : Array.isArray(payload?.urls) ? payload.urls
       : Array.isArray(payload?.data) ? payload.data : []
@@ -58,18 +49,23 @@ function listSources(text) {
   })))
 }
 
-/** @type {import('./index.js').Adapter} */
-const tavily = {
+export default {
   id: 'tavily',
   title: 'Tavily',
+  host: 'tavily.com',
   keyRequired: false,
   defaults: {
     baseURL: 'https://mcp.tavily.com/mcp/',
     keyRef: 'TAVILY_API_KEY',
     consoleURL: 'https://app.tavily.com',
   },
+  headers: key => requestHeaders('tavily', key
+    ? bearer(key)
+    : { 'x-tavily-access-mode': 'keyless' }),
   tools: {
     search: {
+      mcp: 'tavily_search',
+      card: 'search',
       description:
         'Search the web with Tavily and return ranked results with title, URL, and a content excerpt. '
         + 'Use one focused query per call.',
@@ -85,14 +81,14 @@ const tavily = {
         required: ['query'],
         additionalProperties: false,
       },
-      run: async ({ cfg, key, args, signal }) => {
-        const text = await sender(cfg, key)('tavily_search', {
-          query: args.query,
-          max_results: typeof args.max_results === 'number' ? args.max_results : cfg.maxResults,
-        }, signal)
+      args: (args, cfg) => ({
+        query: args.query,
+        max_results: typeof args.max_results === 'number' ? args.max_results : cfg.maxResults,
+      }),
+      parse: (text) => {
         const payload = unwrap(text)
-        // Tavily names the publication time `published_date`; the shared mapping
-        // reads `publishedAt`, so project it here instead of leaking the alias.
+        // Tavily names the publication time `published_date`; project it here
+        // rather than teaching the shared mapping a provider alias.
         const items = sources((Array.isArray(payload?.results) ? payload.results : []).map(item => ({
           url: item?.url,
           title: item?.title,
@@ -104,6 +100,8 @@ const tavily = {
     },
 
     extract: {
+      mcp: 'tavily_extract',
+      card: 'fetch',
       description: 'Extract the main content of one web page with Tavily and return it as Markdown.',
       parameters: {
         type: 'object',
@@ -113,23 +111,23 @@ const tavily = {
         required: ['url'],
         additionalProperties: false,
       },
-      run: async ({ cfg, key, args, signal }) => {
-        const text = await sender(cfg, key)('tavily_extract', {
-          urls: [args.url],
-          format: 'markdown',
-        }, signal)
+      args: args => ({ urls: [args.url], format: 'markdown' }),
+      parse: (text, { args }) => {
         const payload = unwrap(text)
         const page = Array.isArray(payload?.results) ? payload.results[0] : undefined
-        if (page && typeof page.raw_content === 'string') {
+        if (page !== undefined && typeof page.raw_content === 'string') {
           return fetchResult({ text: `${args.url}\n\n${page.raw_content}`, url: args.url })
         }
         const failed = Array.isArray(payload?.failed_results) ? payload.failed_results[0] : undefined
-        if (failed) throw new Error(failed.error ?? 'extraction failed')
+        if (failed !== undefined) throw new Error(failed.error ?? 'extraction failed')
         return fetchResult({ text, url: args.url })
       },
     },
 
     crawl: {
+      mcp: 'tavily_crawl',
+      card: 'search',
+      needsKey: true,
       description:
         'Crawl a site from one root URL with Tavily and return the pages it extracted, with configurable depth, '
         + 'breadth, and result count. Needs a Tavily API key; keyless access covers search and extract only.',
@@ -164,13 +162,13 @@ const tavily = {
         required: ['url'],
         additionalProperties: false,
       },
-      run: async ({ cfg, key, args, signal }) => {
-        const text = await sender(cfg, key)('tavily_crawl', args, signal)
-        return searchResult({ items: listSources(text), raw: text })
-      },
+      parse: text => searchResult({ items: listSources(text), raw: text }),
     },
 
     map: {
+      mcp: 'tavily_map',
+      card: 'search',
+      needsKey: true,
       description:
         'Map a site structure from one root URL with Tavily and return the URLs it found. Needs a Tavily API key; '
         + 'keyless access covers search and extract only.',
@@ -195,13 +193,12 @@ const tavily = {
         required: ['url'],
         additionalProperties: false,
       },
-      run: async ({ cfg, key, args, signal }) => {
-        const text = await sender(cfg, key)('tavily_map', args, signal)
-        return searchResult({ items: listSources(text), raw: text })
-      },
+      parse: text => searchResult({ items: listSources(text), raw: text }),
     },
 
     research: {
+      mcp: 'tavily_research',
+      needsKey: true,
       description:
         'Run one multi-source research task with Tavily and return its written answer. Slower and more expensive '
         + 'than a search; use it for synthesis, not a list of pages. Needs a Tavily API key.',
@@ -231,9 +228,6 @@ const tavily = {
         required: ['input'],
         additionalProperties: false,
       },
-      run: ({ cfg, key, args, signal }) => sender(cfg, key)('tavily_research', args, signal),
     },
   },
 }
-
-export default tavily

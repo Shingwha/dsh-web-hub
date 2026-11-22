@@ -74,7 +74,7 @@ npm pack
 
 ## 加一个来源
 
-在 `src/adapters/` 里加一个文件，声明它自己的工具，再到 `src/adapters/index.js` 登记一行；核心与面板都不用改。详见 [docs/DETAIL.md](docs/DETAIL.md)。
+在 `src/providers/` 里加一个文件，声明它自己的工具，再到 `src/providers/index.js` 登记一行，然后跑 `npm run sync`；核心与面板都不用改。详见 [docs/ADDING-A-PROVIDER.md](docs/ADDING-A-PROVIDER.md)。
 
 ## License
 

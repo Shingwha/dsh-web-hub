@@ -1,20 +1,14 @@
-import { callTool } from './mcp.js'
-import { fetchResult, searchResult, sources } from './sources.js'
-
 /**
- * Firecrawl — hosted MCP. Page scraping works without a key; search may answer
- * with an explicit keyless refusal until an API key is configured.
+ * Firecrawl — hosted MCP whose scrape endpoint works without a key.
+ *
+ * Search and scrape answer with JSON envelopes, so this file narrows them; the
+ * model-facing text and the card data come from the shared shaping.
  */
 
-const CLIENT = 'dsh-web-hub/0.4.0'
+import { fetchResult, searchResult, sources } from '../sources.js'
+import { bearer, requestHeaders } from '../transport.js'
 
-function sender(cfg, key) {
-  const headers = { 'x-firecrawl-client': CLIENT }
-  if (key) headers.authorization = `Bearer ${key}`
-  return (name, args, signal) => callTool({ url: cfg.baseURL, headers, name, args, signal })
-}
-
-/** Read a Firecrawl payload, turning its refusal envelope into a real error. */
+/** Turn a refusal envelope into a real error instead of a payload. */
 function unwrap(text) {
   let payload
   try {
@@ -29,18 +23,22 @@ function unwrap(text) {
   return payload
 }
 
-/** @type {import('./index.js').Adapter} */
-const firecrawl = {
+export default {
   id: 'firecrawl',
   title: 'Firecrawl',
+  host: 'firecrawl.dev',
   keyRequired: false,
   defaults: {
     baseURL: 'https://mcp.firecrawl.dev/v2/mcp',
     keyRef: 'FIRECRAWL_API_KEY',
     consoleURL: 'https://www.firecrawl.dev/app/api-keys',
+    timeoutMs: 60_000,
   },
+  headers: key => requestHeaders('firecrawl', bearer(key)),
   tools: {
     search: {
+      mcp: 'firecrawl_search',
+      card: 'search',
       description:
         'Search the web with Firecrawl and return results with title, URL, and description. '
         + 'Anonymous search is heavily rate limited; configure an API key for regular use.',
@@ -56,18 +54,20 @@ const firecrawl = {
         required: ['query'],
         additionalProperties: false,
       },
-      run: async ({ cfg, key, args, signal }) => {
-        const text = await sender(cfg, key)('firecrawl_search', {
-          query: args.query,
-          limit: typeof args.max_results === 'number' ? args.max_results : cfg.maxResults,
-          objective: args.query,
-        }, signal)
+      args: (args, cfg) => ({
+        query: args.query,
+        limit: typeof args.max_results === 'number' ? args.max_results : cfg.maxResults,
+        objective: args.query,
+      }),
+      parse: (text) => {
         const payload = unwrap(text)
         return searchResult({ items: sources(payload?.data?.web), raw: text })
       },
     },
 
     extract: {
+      mcp: 'firecrawl_scrape',
+      card: 'fetch',
       description: 'Scrape one web page with Firecrawl and return its main content as Markdown.',
       parameters: {
         type: 'object',
@@ -77,13 +77,13 @@ const firecrawl = {
         required: ['url'],
         additionalProperties: false,
       },
-      run: async ({ cfg, key, args, signal }) => {
-        const text = await sender(cfg, key)('firecrawl_scrape', {
-          url: args.url,
-          formats: ['markdown'],
-          onlyMainContent: true,
-          objective: 'Return the readable page content.',
-        }, signal)
+      args: args => ({
+        url: args.url,
+        formats: ['markdown'],
+        onlyMainContent: true,
+        objective: 'Return the readable page content.',
+      }),
+      parse: (text, { args }) => {
         const payload = unwrap(text)
         if (typeof payload?.markdown === 'string') {
           const title = typeof payload.metadata?.title === 'string' ? `# ${payload.metadata.title}\n\n` : ''
@@ -98,5 +98,3 @@ const firecrawl = {
     },
   },
 }
-
-export default firecrawl

@@ -1,6 +1,6 @@
 {
   "name": "dsh-web-hub",
-  "version": "0.9.10",
+  "version": "0.10.0",
   "description": "DeepSeek Harness plugin: search and fetch tools from multiple providers, switched per tool.",
   "type": "module",
   "license": "MIT",
@@ -61,5 +61,10 @@
   "homepage": "https://github.com/Shingwha/dsh-web-hub#readme",
   "bugs": {
     "url": "https://github.com/Shingwha/dsh-web-hub/issues"
+  },
+  "scripts": {
+    "test": "node --test",
+    "sync": "node scripts/sync-client-catalog.mjs",
+    "check": "node scripts/sync-client-catalog.mjs --check && node --test"
   }
 }

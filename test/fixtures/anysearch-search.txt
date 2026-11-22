@@ -1,0 +1,9 @@
+## Search Results (2 results, 644ms)
+
+### 1. DeepSeek Harness: Everything is a Plugin.
+- **URL**: https://github.com/deepseek-ai/deepseek-harness
+- DeepSeek Harness is an open-source agent harness built on Cordis. date: Aug 12, 2026
+
+### 2. DeepSeek Harness | Explore the limits of intelligence
+- **URL**: https://www.deepseek.com/en/harness/
+- DeepSeek Harness is in preview, with evolving core plugins.

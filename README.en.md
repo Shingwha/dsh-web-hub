@@ -76,8 +76,8 @@ Disable or remove **dsh-web-hub** in Plugins:
 
 ## Add a provider
 
-Drop a file into `src/adapters/` declaring that provider's own tools, then register it in
-`src/adapters/index.js`. Neither the core nor the panel changes. See [docs/DETAIL.md](docs/DETAIL.md).
+Drop a file into `src/providers/` declaring that provider's own tools, register it in
+`src/providers/index.js`, then run `npm run sync`. Neither the core nor the panel changes. See [docs/ADDING-A-PROVIDER.md](docs/ADDING-A-PROVIDER.md).
 
 ## License
 

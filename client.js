@@ -426,26 +426,33 @@ window.__ModuleLoader__.load({
       return id.charAt(0).toUpperCase() + id.slice(1)
     }
 
-    /**
-     * Every tool that renders through a card, with the card it gets. Search and
-     * fetch are the only shapes so far: a list of sources, or one page.
-     */
+    // <generated:catalog>
+    /** Generated from src/providers by scripts/sync-client-catalog.mjs; do not edit. */
     const CARD_KINDS = {
-      anysearch_search: 'search',
       anysearch_batch_search: 'search',
+      anysearch_search: 'search',
       exa_search: 'search',
-      tavily_search: 'search',
+      firecrawl_search: 'search',
       tavily_crawl: 'search',
       tavily_map: 'search',
-      firecrawl_search: 'search',
+      tavily_search: 'search',
       anysearch_extract: 'fetch',
       exa_extract: 'fetch',
-      tavily_extract: 'fetch',
       firecrawl_extract: 'fetch',
+      tavily_extract: 'fetch',
     }
 
-    /** Tools that only answer with a provider key; the panel says so when it is unset. */
+    /** Tools that only answer with a provider key; the panel says so while it is unset. */
     const KEY_ONLY = new Set(['tavily_crawl', 'tavily_map', 'tavily_research'])
+
+    /** Home host of each provider, whose mark a row falls back to. */
+    const PROVIDER_HOSTS = {
+      anysearch: 'anysearch.com',
+      exa: 'exa.ai',
+      firecrawl: 'firecrawl.dev',
+      tavily: 'tavily.com',
+    }
+    // </generated:catalog>
 
     /** Card rules live with the card: the chat never mounts the plugin panel. */
     const CARD_STYLES = [
@@ -558,14 +565,6 @@ window.__ModuleLoader__.load({
           background: icon.tile ?? 'transparent',
         },
       }, h('img', { className: 'wh-provider-img', src: icon.src, alt: '', width: size, height: size }))
-    }
-
-    /** Home host of each provider, whose favicon marks the row. */
-    const PROVIDER_HOSTS = {
-      anysearch: 'anysearch.com',
-      exa: 'exa.ai',
-      tavily: 'tavily.com',
-      firecrawl: 'firecrawl.dev',
     }
 
     /** Provider id of a wire tool name (`tavily_crawl` -> `tavily`). */

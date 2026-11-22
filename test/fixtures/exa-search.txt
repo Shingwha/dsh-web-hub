@@ -1,0 +1,12 @@
+Title: DeepSeek Harness | Explore the limits of intelligence
+URL: https://www.deepseek.com/en/harness/
+Published: 2026-08-12T00:00:00.000Z
+Author: N/A
+Highlights:
+DeepSeek Harness is in preview, with evolving core plugins.
+Title: DeepSeek Harness: Everything is a Plugin.
+URL: https://github.com/deepseek-ai/deepseek-harness
+Published: N/A
+Author: N/A
+Highlights:
+An open-source agent harness built on Cordis.

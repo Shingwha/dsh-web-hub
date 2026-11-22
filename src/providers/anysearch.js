@@ -1,19 +1,23 @@
 /**
- * AnySearch adapter — five provider-owned tools over the hosted MCP endpoint.
+ * AnySearch — five provider-owned tools over the hosted MCP endpoint.
  *
- * The adapter owns its tool names, descriptions and JSON Schemas; the hub only
- * prefixes the provider id and decides which of them are mounted. Transport is
- * the shared MCP helper, so this file is contracts plus argument mapping.
+ * Anonymous access works for every tool at lower rate limits, so a missing key
+ * is a quality-of-service choice rather than a setup error. The provider formats
+ * its own search text, so this file owns that layout and nothing else.
  */
 
-import { callTool } from './mcp.js'
-import { fetchResult, searchResult } from './sources.js'
+import { fetchResult, searchResult } from '../sources.js'
+import { bearer, requestHeaders } from '../transport.js'
 
-const CLIENT_HEADER = 'dsh-web-hub/0.9.0'
+const DOMAINS = [
+  'academic', 'agriculture', 'business', 'code', 'energy', 'environment', 'film',
+  'finance', 'gaming', 'general', 'health', 'ip', 'legal', 'resource', 'security',
+  'social_media', 'travel',
+]
+
 /**
- * Split the provider's numbered markdown into sources. The endpoint formats its
- * own text — `### N. title`, then `- **URL**: …`, then excerpt bullets that may
- * end in `date: …` — so this is the only place that knows that layout.
+ * Split the provider's numbered markdown into sources: `### N. title`, then
+ * `- **URL**: …`, then excerpt bullets that may end in `date: …`.
  */
 function parseSources(text) {
   const sources = []
@@ -46,33 +50,38 @@ function parseSources(text) {
   return sources.filter(source => typeof source.url === 'string')
 }
 
-const DOMAINS = [
-  'academic', 'agriculture', 'business', 'code', 'energy', 'environment', 'film',
-  'finance', 'gaming', 'general', 'health', 'ip', 'legal', 'resource', 'security',
-  'social_media', 'travel',
-]
-
-/** One request sender for this provider: endpoint, headers, shared client. */
-function send(cfg, key) {
-  const headers = { 'x-anysearch-client': CLIENT_HEADER }
-  if (key) headers.authorization = `Bearer ${key}`
-  return (name, args, signal) => callTool({ url: cfg.baseURL, headers, name, args, signal })
+/** Read the endpoint's `{ url, title, content }` envelope into page text. */
+function parsePage(text, args) {
+  try {
+    const page = JSON.parse(text)
+    if (page !== null && typeof page === 'object' && typeof page.content === 'string') {
+      const title = typeof page.title === 'string' && page.title.length > 0 ? `# ${page.title}\n\n` : ''
+      const url = typeof page.url === 'string' && page.url.length > 0 ? page.url : args.url
+      return fetchResult({
+        text: `${title}Source: ${url}\n\n${page.content}`,
+        url,
+        truncated: page.content.length >= 50_000,
+      })
+    }
+  } catch {}
+  return fetchResult({ text, url: args.url })
 }
 
-/** @type {import('./index.js').Adapter} */
-const anysearch = {
+export default {
   id: 'anysearch',
   title: 'AnySearch',
-  // Anonymous access works for every tool at lower rate limits, so a missing key
-  // is a quality-of-service choice rather than a setup error.
+  host: 'anysearch.com',
   keyRequired: false,
   defaults: {
     baseURL: 'https://api.anysearch.com/mcp',
     keyRef: 'ANYSEARCH_API_KEY',
     consoleURL: 'https://www.anysearch.com/console/api-keys',
   },
+  headers: key => requestHeaders('anysearch', bearer(key)),
   tools: {
     search: {
+      mcp: 'search',
+      card: 'search',
       description:
         'Search the web and return relevant results with title and source URL. Use one intent per call; '
         + 'for independent questions call anysearch_batch_search instead.',
@@ -100,18 +109,17 @@ const anysearch = {
         required: ['query'],
         additionalProperties: false,
       },
-      run: async ({ cfg, key, args, signal }) => {
-        const text = await send(cfg, key)('search', {
-          ...args,
-          max_results: typeof args.max_results === 'number' ? args.max_results : cfg.maxResults,
-        }, signal)
-        // An unexpected payload keeps the provider's own words for the model and
-        // carries no card data, so the row falls back to plain text.
-        return searchResult({ items: parseSources(text), raw: text })
-      },
+      args: (args, cfg) => ({
+        ...args,
+        max_results: typeof args.max_results === 'number' ? args.max_results : cfg.maxResults,
+      }),
+      // An unexpected payload keeps the provider's own words and no card data.
+      parse: text => searchResult({ items: parseSources(text), raw: text }),
     },
 
     extract: {
+      mcp: 'extract',
+      card: 'fetch',
       description: 'Fetch one web page and return its content as Markdown. Only HTML pages are supported; content past 50,000 characters is truncated.',
       parameters: {
         type: 'object',
@@ -121,27 +129,12 @@ const anysearch = {
         required: ['url'],
         additionalProperties: false,
       },
-      run: async ({ cfg, key, args, signal }) => {
-        const text = await send(cfg, key)('extract', { url: args.url }, signal)
-        // The endpoint answers with a JSON envelope { url, title, content } where
-        // `content` is Markdown; hand the model the page, not the envelope.
-        try {
-          const page = JSON.parse(text)
-          if (page && typeof page.content === 'string') {
-            const title = typeof page.title === 'string' && page.title.length > 0 ? `# ${page.title}\n\n` : ''
-            const source = typeof page.url === 'string' && page.url.length > 0 ? `Source: ${page.url}\n\n` : ''
-            return fetchResult({
-              text: title + source + page.content,
-              url: typeof page.url === 'string' && page.url.length > 0 ? page.url : args.url,
-              truncated: page.content.length >= 50_000,
-            })
-          }
-        } catch {}
-        return fetchResult({ text, url: args.url })
-      },
+      args: args => ({ url: args.url }),
+      parse: (text, { args }) => parsePage(text, args),
     },
 
     get_sub_domains: {
+      mcp: 'get_sub_domains',
       description: 'List the vertical domains and sub-domains a domain search accepts, with their parameter definitions. Call this before any search that sets a domain.',
       parameters: {
         type: 'object',
@@ -154,10 +147,11 @@ const anysearch = {
         },
         additionalProperties: false,
       },
-      run: ({ cfg, key, args, signal }) => send(cfg, key)('get_sub_domains', args, signal),
     },
 
     batch_search: {
+      mcp: 'batch_search',
+      card: 'search',
       description: 'Run 1-5 independent searches in parallel and return all their results. Each query follows the anysearch_search argument shape.',
       parameters: {
         type: 'object',
@@ -171,10 +165,11 @@ const anysearch = {
         required: ['queries'],
         additionalProperties: false,
       },
-      run: ({ cfg, key, args, signal }) => send(cfg, key)('batch_search', { queries: args.queries }, signal),
+      args: args => ({ queries: args.queries }),
     },
 
     score: {
+      mcp: 'score',
       description: 'Submit quality feedback for earlier search results. Optional; every entry names a request id returned with those results.',
       parameters: {
         type: 'object',
@@ -195,9 +190,7 @@ const anysearch = {
         required: ['feedbacks'],
         additionalProperties: false,
       },
-      run: ({ cfg, key, args, signal }) => send(cfg, key)('score', { feedbacks: args.feedbacks }, signal),
+      args: args => ({ feedbacks: args.feedbacks }),
     },
   },
 }
-
-export default anysearch

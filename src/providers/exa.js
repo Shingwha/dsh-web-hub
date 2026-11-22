@@ -1,24 +1,17 @@
-import { callTool } from './mcp.js'
-import { fetchResult, searchResult } from './sources.js'
-
 /**
- * Exa — hosted MCP, no API key required.
- * Tools: web_search_exa (search), web_fetch_exa (page → text).
+ * Exa — hosted MCP, usable without a key.
+ *
+ * Its search tool renders results as `Title:` / `URL:` / `Published:` /
+ * `Author:` / `Highlights:` lines rather than JSON, so this file owns that
+ * layout. Everything else is the shared shaping.
  */
 
-const CLIENT = 'dsh-web-hub/0.4.0'
-
-function sender(cfg, key) {
-  const headers = { 'x-exa-client': CLIENT }
-  if (key) headers.authorization = `Bearer ${key}`
-  return (name, args, signal) => callTool({ url: cfg.baseURL, headers, name, args, signal })
-}
-
+import { fetchResult, searchResult } from '../sources.js'
+import { bearer, requestHeaders } from '../transport.js'
 
 /**
- * Split Exa's formatted text into sources. Its MCP tool renders one block per
- * result as `Title:` / `URL:` / `Published:` / `Author:` / `Highlights:` lines,
- * so this is the only place that knows that layout.
+ * Split Exa's formatted text into sources. One block starts at each `Title:`
+ * line and carries the URL and the publication date among its fields.
  */
 function parseSources(text) {
   const items = []
@@ -43,18 +36,21 @@ function parseSources(text) {
   return items
 }
 
-/** @type {import('./index.js').Adapter} */
-const exa = {
+export default {
   id: 'exa',
   title: 'Exa',
+  host: 'exa.ai',
   keyRequired: false,
   defaults: {
     baseURL: 'https://mcp.exa.ai/mcp',
     keyRef: 'EXA_API_KEY',
     consoleURL: 'https://dashboard.exa.ai/api-keys',
   },
+  headers: key => requestHeaders('exa', bearer(key)),
   tools: {
     search: {
+      mcp: 'web_search_exa',
+      card: 'search',
       description:
         'Search the web with Exa and return results with title, URL, and page highlights. '
         + 'Use one focused query per call.',
@@ -70,17 +66,17 @@ const exa = {
         required: ['query'],
         additionalProperties: false,
       },
-      run: async ({ cfg, key, args, signal }) => {
-        const text = await sender(cfg, key)('web_search_exa', {
-          query: args.query,
-          numResults: typeof args.max_results === 'number' ? args.max_results : cfg.maxResults,
-          objective: args.query,
-        }, signal)
-        return searchResult({ items: parseSources(text), raw: text })
-      },
+      args: (args, cfg) => ({
+        query: args.query,
+        numResults: typeof args.max_results === 'number' ? args.max_results : cfg.maxResults,
+        objective: args.query,
+      }),
+      parse: text => searchResult({ items: parseSources(text), raw: text }),
     },
 
     extract: {
+      mcp: 'web_fetch_exa',
+      card: 'fetch',
       description: 'Fetch pages with Exa and return their text content. Accepts one URL.',
       parameters: {
         type: 'object',
@@ -90,15 +86,8 @@ const exa = {
         required: ['url'],
         additionalProperties: false,
       },
-      run: async ({ cfg, key, args, signal }) => {
-        const text = await sender(cfg, key)('web_fetch_exa', {
-          urls: [args.url],
-          maxCharacters: 50_000,
-        }, signal)
-        return fetchResult({ text, url: args.url, truncated: text.length >= 50_000 })
-      },
+      args: args => ({ urls: [args.url], maxCharacters: 50_000 }),
+      parse: (text, { args }) => fetchResult({ text, url: args.url, truncated: text.length >= 50_000 }),
     },
   },
 }
-
-export default exa

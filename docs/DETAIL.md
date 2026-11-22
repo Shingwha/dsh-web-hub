@@ -41,6 +41,6 @@ Tavily 的 `crawl` / `map` / `research` 需要 API key（免 key 只覆盖 searc
 
 ## 加来源
 
-`src/adapters/` 新增一个模块，声明自己的工具，再到 `src/adapters/index.js` 登记一行；核心与面板不用改。
+`src/providers/` 新增一个模块，声明自己的工具，再到 `src/providers/index.js` 登记一行，跑 `npm run sync`；核心与面板不用改。
 
 需要凭据的来源在 `defaults` 里写 `keyRef`，密钥只进凭据库，配置只存引用名。

@@ -27,7 +27,7 @@ export default {
       card: 'search',            // 可选：'search' 或 'fetch'，不写就不挂卡片
       description: '…',
       parameters: { type: 'object', properties: { query: { type: 'string' } }, required: ['query'] },
-      args: (args, cfg) => ({ query: args.query, limit: cfg.maxResults }),  // 可选：参数映射
+      args: (args, cfg) => ({ query: args.query }),  // 可选：参数映射
       parse: text => searchResult({ items: sources(JSON.parse(text).results), raw: text }), // 可选
     },
   },
@@ -38,6 +38,7 @@ export default {
 
 - `mcp` 是远端工具名，`card` 决定会话里的卡片类型，`needsKey: true` 让面板在未配置时标 `需 API Key`。
 - `args` 缺省就原样透传；`parse` 缺省就返回 `{ text }`（模型看到原文，卡片退回纯文本）。
+- 不要替调用方补默认值：条数之类的参数，用户没配（`cfg.maxResults` 为 0）就不传，让服务商用自己默认。
 - 搜索类一律用 `searchResult`，抓取类一律用 `fetchResult`；不要在适配器里拼文本或拼卡片数据。
 
 ## 2. 登记

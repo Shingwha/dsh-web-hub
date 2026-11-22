@@ -75,16 +75,16 @@ export default {
           query: { type: 'string', description: 'One natural-language query.' },
           max_results: {
             type: 'number', minimum: 1, maximum: 20,
-            description: 'Number of results. Defaults to the configured value.',
+            description: 'Number of results. Omit to use the provider default.',
           },
         },
         required: ['query'],
         additionalProperties: false,
       },
-      args: (args, cfg) => ({
-        query: args.query,
-        max_results: typeof args.max_results === 'number' ? args.max_results : cfg.maxResults,
-      }),
+      args: (args, cfg) => {
+        const count = typeof args.max_results === 'number' ? args.max_results : cfg.maxResults
+        return count > 0 ? { query: args.query, max_results: count } : { query: args.query }
+      },
       parse: (text) => {
         const payload = unwrap(text)
         // Tavily names the publication time `published_date`; project it here

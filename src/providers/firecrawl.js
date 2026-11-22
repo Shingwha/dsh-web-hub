@@ -48,17 +48,16 @@ export default {
           query: { type: 'string', description: 'One natural-language query.' },
           max_results: {
             type: 'number', minimum: 1, maximum: 20,
-            description: 'Number of results. Defaults to the configured value.',
+            description: 'Number of results. Omit to use the provider default.',
           },
         },
         required: ['query'],
         additionalProperties: false,
       },
-      args: (args, cfg) => ({
-        query: args.query,
-        limit: typeof args.max_results === 'number' ? args.max_results : cfg.maxResults,
-        objective: args.query,
-      }),
+      args: (args, cfg) => {
+        const count = typeof args.max_results === 'number' ? args.max_results : cfg.maxResults
+        return count > 0 ? { query: args.query, limit: count } : { query: args.query }
+      },
       parse: (text) => {
         const payload = unwrap(text)
         return searchResult({ items: sources(payload?.data?.web), raw: text })
@@ -77,12 +76,8 @@ export default {
         required: ['url'],
         additionalProperties: false,
       },
-      args: args => ({
-        url: args.url,
-        formats: ['markdown'],
-        onlyMainContent: true,
-        objective: 'Return the readable page content.',
-      }),
+      // Only what the output contract needs: markdown, main content.
+      args: args => ({ url: args.url, formats: ['markdown'], onlyMainContent: true }),
       parse: (text, { args }) => {
         const payload = unwrap(text)
         if (typeof payload?.markdown === 'string') {

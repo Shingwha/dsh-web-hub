@@ -91,7 +91,7 @@ export default {
           query: { type: 'string', description: 'One natural-language query with a single intent.' },
           max_results: {
             type: 'number', minimum: 1, maximum: 10,
-            description: 'Number of results. Defaults to the configured value, at most 10.',
+            description: 'Number of results. Omit to use the provider default; at most 10.',
           },
           domain: {
             type: 'string', enum: DOMAINS,
@@ -109,10 +109,13 @@ export default {
         required: ['query'],
         additionalProperties: false,
       },
-      args: (args, cfg) => ({
-        ...args,
-        max_results: typeof args.max_results === 'number' ? args.max_results : cfg.maxResults,
-      }),
+      // No count unless the caller gave one or the user pinned one: the
+      // provider's own default is the better answer than a number we invented.
+      args: (args, cfg) => {
+        const { max_results, ...rest } = args
+        const count = typeof max_results === 'number' ? max_results : cfg.maxResults
+        return count > 0 ? { ...rest, max_results: count } : rest
+      },
       // An unexpected payload keeps the provider's own words and no card data.
       parse: text => searchResult({ items: parseSources(text), raw: text }),
     },

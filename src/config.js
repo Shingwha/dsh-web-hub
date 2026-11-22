@@ -1,8 +1,14 @@
 import z from '@deepseek-ai/schemastery'
 
-/** Settings applied when a provider omits them. */
+/**
+ * Settings applied when a provider omits them.
+ *
+ * `maxResults: 0` means "do not ask for a count" — every provider then answers
+ * with its own default, which is what the model should see unless the user
+ * deliberately pins a number.
+ */
 export const DEFAULTS = {
-  maxResults: 8,
+  maxResults: 0,
   timeoutMs: 30_000,
 }
 
@@ -22,7 +28,7 @@ export const Config = z.object({
     baseURL: z.string().default(''),
     keyRef: z.string().default(''),
     consoleURL: z.string().default(''),
-    maxResults: z.number().default(DEFAULTS.maxResults),
+    maxResults: z.number().min(0).default(DEFAULTS.maxResults).description('Results to request; 0 lets the provider use its own default.'),
     timeoutMs: z.number().default(DEFAULTS.timeoutMs),
   })).default({}).volatile().description(
     'Per-service settings keyed by provider id.',

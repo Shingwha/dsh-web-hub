@@ -91,11 +91,15 @@ const tavily = {
           max_results: typeof args.max_results === 'number' ? args.max_results : cfg.maxResults,
         }, signal)
         const payload = unwrap(text)
-        return searchResult({
-          items: sources(payload?.results),
-          answer: payload?.answer,
-          raw: text,
-        })
+        // Tavily names the publication time `published_date`; the shared mapping
+        // reads `publishedAt`, so project it here instead of leaking the alias.
+        const items = sources((Array.isArray(payload?.results) ? payload.results : []).map(item => ({
+          url: item?.url,
+          title: item?.title,
+          snippet: item?.content ?? item?.raw_content,
+          publishedAt: item?.published_date ?? item?.publishedDate,
+        })))
+        return searchResult({ items, answer: payload?.answer, raw: text })
       },
     },
 

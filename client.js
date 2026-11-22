@@ -715,10 +715,17 @@ window.__ModuleLoader__.load({
     }
 
     /** One source list entry. */
+    /** A provider date for display: an ISO timestamp shortens to its day. */
+    function shortDate(value) {
+      if (typeof value !== 'string' || value.length === 0) return undefined
+      const day = /^(\d{4}-\d{2}-\d{2})T/.exec(value)
+      return day !== null ? day[1] : value
+    }
+
     function SourceItem(props) {
       const { source } = props
       const label = typeof source.title === 'string' && source.title.length > 0 ? source.title : displayUrl(source.url)
-      const meta = [displayUrl(source.url), source.publishedAt]
+      const meta = [displayUrl(source.url), shortDate(source.publishedAt)]
         .filter(part => typeof part === 'string' && part.length > 0)
         .join(' · ')
       return h('div', { className: 'wh-item' },

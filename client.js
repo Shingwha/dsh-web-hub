@@ -488,7 +488,7 @@ window.__ModuleLoader__.load({
       '.wh-item-index{flex:none;width:14px;text-align:right;font-size:11px;line-height:1.6;color:var(--dsw-alias-label-tertiary);font-variant-numeric:tabular-nums}',
       '.wh-item-mark{display:inline-flex;flex:none;margin-top:1px}',
       '.wh-item-main{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}',
-      '.wh-site{position:relative;display:inline-flex;flex:none;align-items:center;justify-content:center;overflow:hidden;border-radius:4px;color:#fff;font-size:9px;font-weight:600;line-height:1}',
+      '.wh-site{position:relative;display:inline-flex;flex:none;align-items:center;justify-content:center;overflow:hidden;border-radius:4px;color:#fff;font-size:9px;font-weight:600;line-height:1;box-shadow:inset 0 0 0 0.5px rgba(0,0,0,0.10)}',
       '.wh-site-letter{position:relative;z-index:0}',
       '.wh-site-img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;opacity:0;transition:opacity .12s ease}',
       '.wh-site[data-loaded=true] .wh-site-letter{display:none}',
@@ -633,7 +633,7 @@ window.__ModuleLoader__.load({
         style: {
           width: `${size}px`,
           height: `${size}px`,
-          background: loaded ? 'transparent' : `hsl(${hostHue(host)} 38% 42%)`,
+          background: loaded ? '#ffffff' : `hsl(${hostHue(host)} 38% 42%)`,
         },
       },
         h('span', { className: 'wh-site-letter' }, host.slice(0, 1).toUpperCase()),
@@ -834,11 +834,11 @@ window.__ModuleLoader__.load({
             : null),
         kind === 'search' && marks.length > 0
           ? h('span', { className: 'wh-card-marks' },
-            marks.map(host => h(SiteIcon, { key: host, url: `https://${host}`, size: 14 })),
+            marks.map(host => h(SiteIcon, { key: host, url: `https://${host}`, size: 16 })),
             extraHosts > 0 ? h('span', { className: 'wh-card-more' }, `+${extraHosts}`) : null)
           : null,
         kind === 'fetch' && hasHttpUrl(url)
-          ? h(SiteIcon, { url, size: 14 })
+          ? h(SiteIcon, { url, size: 16 })
           : null,
         status.length > 0 ? h('span', { className: 'wh-card-meta' }, status) : null,
         expandable

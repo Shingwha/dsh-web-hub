@@ -14,20 +14,23 @@
  * @property {Record<string, AdapterTool>} tools Tools this provider owns.
  *
  * @typedef {object} AdapterTool
- * @property {string} description Model-facing one-line description.
  * @property {string} description Model-facing description.
  * @property {object} parameters JSON Schema for the arguments.
+ * @property {number} [timeoutMs] Per-tool call limit; overrides the provider's
+ *   `timeoutMs` for tools that legitimately run longer than a fast query.
  * @property {(input: { cfg: object, key?: string, args: any, signal: AbortSignal }) => Promise<string>} run
  */
 
 import anysearch from './anysearch.js'
 import exa from './exa.js'
 import firecrawl from './firecrawl.js'
+import parallel from './parallel.js'
 import tavily from './tavily.js'
 
 export const adapters = {
   [anysearch.id]: anysearch,
   [exa.id]: exa,
   [firecrawl.id]: firecrawl,
+  [parallel.id]: parallel,
   [tavily.id]: tavily,
 }

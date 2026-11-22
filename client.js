@@ -9,6 +9,15 @@ window.__ModuleLoader__.load({
     // The Loader entry id is also the settings namespace of this row.
     const SETTINGS = 'web-hub'
     const BUILTIN_PREFIX = 'web_'
+    /**
+     * Tools that cannot run without a credential. The panel sees tool names
+     * only, so this mirrors the adapters' own `keyRequired` — keep it in sync
+     * with src/adapters. Such a tool also keeps its switch disabled until its
+     * group's key is saved.
+     */
+    const TOOL_NOTES = {
+      parallel_research: 'needKey',
+    }
 
     const zh = {
       tools: '工具',
@@ -24,6 +33,10 @@ window.__ModuleLoader__.load({
       keySet: '已配置',
       keyUnset: '未配置',
       keyFree: '免 key',
+      keySetUp: '设置',
+      keyChange: '更换',
+      keyCancel: '取消',
+      needKey: '需 key',
       reload: '重新读取',
       loadError: '读取配置失败。',
       saveError: '保存失败。',
@@ -46,6 +59,10 @@ window.__ModuleLoader__.load({
       keySet: 'set',
       keyUnset: 'not set',
       keyFree: 'keyless',
+      keySetUp: 'set up',
+      keyChange: 'change',
+      keyCancel: 'cancel',
+      needKey: 'needs key',
       reload: 'Reload',
       loadError: 'Could not read the configuration.',
       saveError: 'Could not save.',
@@ -63,16 +80,30 @@ window.__ModuleLoader__.load({
       '.wh-group{display:flex;flex-direction:column}',
       '.wh-group-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px}',
       '.wh-group-name{font-size:14px;font-weight:500;line-height:20px}',
+      '.wh-group-tags{display:flex;align-items:center;gap:8px}',
+      '.wh-chip{font-size:11px;line-height:1.5;color:var(--dsw-alias-state-warning-primary,#b4690e);white-space:nowrap}',
+      '.wh-chip-quiet{color:var(--dsw-alias-label-tertiary)}',
       '.wh-panel{padding:0 16px;border-radius:var(--dsw-radius-md);background:var(--dsw-alias-bg-module-platform)}',
       '.wh-panel>*+*{border-top:0.5px solid var(--dsw-alias-border-l2)}',
       '.wh-row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 0}',
+      '.wh-row-label{display:flex;align-items:center;gap:8px;min-width:0}',
+      '.wh-note{font-size:11px;line-height:1.5;color:var(--dsw-alias-label-tertiary);white-space:nowrap}',
       '.wh-name{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px;line-height:1.5}',
       '.wh-hint{margin:0;font-size:12px;line-height:1.5;color:var(--dsw-alias-label-tertiary)}',
-      '.wh-key-actions{display:flex;align-items:center;gap:8px;padding:0 0 12px;flex-wrap:wrap}',
+      '.wh-keyrow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0}',
+      '.wh-keyrow-main{display:flex;align-items:center;gap:8px;min-width:0}',
+      '.wh-keyrow-label{font-size:12px;line-height:1.5;color:var(--dsw-alias-label-secondary,var(--dsw-alias-label-tertiary))}',
+      '.wh-keyrow-state{font-size:12px;line-height:1.5;color:var(--dsw-alias-label-tertiary)}',
+      '.wh-keyrow-ref{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;line-height:1.5;color:var(--dsw-alias-label-tertiary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+      '.wh-action{appearance:none;background:none;border:0;padding:0;font:inherit;font-size:12px;line-height:1.5;color:var(--dsw-alias-link);cursor:pointer}',
+      '.wh-action:disabled{color:var(--dsw-alias-label-tertiary);cursor:default}',
+      '.wh-action-strong{color:var(--dsw-alias-label-primary);font-weight:500}',
+      '.wh-key-actions{display:flex;align-items:center;gap:12px;padding:0 0 12px;flex-wrap:wrap}',
       '.wh-link{color:var(--dsw-alias-link);text-decoration:none;font-size:12px;line-height:1.5}',
       '.wh-foot{display:flex;align-items:center;justify-content:space-between;gap:12px}',
       '.wh-error{margin:0;font-size:12px;line-height:1.5;color:var(--dsw-alias-state-error-primary)}',
       '@media (hover:hover){.wh-link:hover{text-decoration:underline}}',
+      '@media (hover:hover){.wh-action:not(:disabled):hover{text-decoration:underline}}',
     ].join('')
 
     // ── Small shared helpers ────────────────────────────────────────────────
@@ -290,47 +321,84 @@ window.__ModuleLoader__.load({
       }
     }
 
-    function KeyField(props) {
+    /**
+     * One provider's credential. Collapsed it is a single summary line under
+     * the switches; the edit state exists only while the user is typing. The
+     * group header carries the same state, where it can be scanned across
+     * providers without reading each row.
+     */
+    function KeyBlock(props) {
       const { t, keyRef, configured, consoleURL, busy, onSave, onClear } = props
       const id = React.useId()
+      const [editing, setEditing] = React.useState(false)
       const [draft, setDraft] = React.useState('')
-      return h('div', { className: 'wh-key' },
-        h(UI.SettingsSecretField, {
-          id,
-          label: t('keys'),
-          hint: t('keyRefHint', { ref: keyRef }),
-          text: draft,
-          configured,
-          stateLabel: configured ? t('keySet') : t('keyUnset'),
-          disabled: busy,
-          onEdit: setDraft,
-        }),
-        h('div', { className: 'wh-key-actions' },
-          consoleURL.length > 0
-            ? h('a', { className: 'wh-link', href: consoleURL, target: '_blank', rel: 'noreferrer noopener' }, t('getKey'))
-            : null,
-          h(UI.Button, {
-            variant: 'outline',
-            size: 'sm',
-            disabled: busy || draft.trim().length === 0,
-            onClick: async () => {
-              if (await onSave(keyRef, draft.trim())) setDraft('')
-            },
-          }, t('keySave')),
+      const close = () => {
+        setEditing(false)
+        setDraft('')
+      }
+
+      if (editing) {
+        return h('div', { className: 'wh-key' },
+          h(UI.SettingsSecretField, {
+            id,
+            label: t('keys'),
+            hint: t('keyRefHint', { ref: keyRef }),
+            text: draft,
+            configured,
+            stateLabel: configured ? t('keySet') : t('keyUnset'),
+            disabled: busy,
+            onEdit: setDraft,
+          }),
+          h('div', { className: 'wh-key-actions' },
+            h('button', {
+              type: 'button',
+              className: 'wh-action wh-action-strong',
+              disabled: busy || draft.trim().length === 0,
+              onClick: async () => {
+                if (await onSave(keyRef, draft.trim())) close()
+              },
+            }, t('keySave')),
+            h('button', {
+              type: 'button',
+              className: 'wh-action',
+              disabled: busy,
+              onClick: close,
+            }, t('keyCancel')),
+            consoleURL.length > 0
+              ? h('a', { className: 'wh-link', href: consoleURL, target: '_blank', rel: 'noreferrer noopener' }, t('getKey'))
+              : null))
+      }
+
+      return h('div', { className: 'wh-keyrow' },
+        h('span', { className: 'wh-keyrow-main' },
+          h('span', { className: 'wh-keyrow-label' }, t('keys')),
+          configured ? h('span', { className: 'wh-keyrow-state' }, t('keySet')) : null,
+          h('button', {
+            type: 'button',
+            className: 'wh-action',
+            disabled: busy,
+            onClick: () => setEditing(true),
+          }, configured ? t('keyChange') : t('keySetUp')),
           configured
-            ? h(UI.Button, {
-              variant: 'outline',
-              size: 'sm',
+            ? h('button', {
+              type: 'button',
+              className: 'wh-action',
               disabled: busy,
               onClick: () => { void onClear(keyRef) },
             }, t('keyClear'))
-            : null))
+            : null),
+        h('span', { className: 'wh-keyrow-ref' }, keyRef))
     }
 
     function ToolRow(props) {
-      const { name, checked, busy, onToggle } = props
+      const { t, name, checked, busy, onToggle } = props
+      // Annotation only: the row still toggles, and a keyless call fails with
+      // the provider's own error rather than a guess made here.
+      const note = TOOL_NOTES[name]
       return h('div', { className: 'wh-row' },
-        h('span', { className: 'wh-name' }, name),
+        h('span', { className: 'wh-row-label' },
+          h('span', { className: 'wh-name' }, name),
+          note === undefined ? null : h('span', { className: 'wh-note' }, t(note))),
         h(UI.Switch, {
           checked,
           label: name,
@@ -344,6 +412,7 @@ window.__ModuleLoader__.load({
       const provider = group.id === 'builtin' || group.id === 'other' ? undefined : providers[group.id]
       const keyRef = typeof provider?.keyRef === 'string' ? provider.keyRef.trim() : ''
       const consoleURL = typeof provider?.consoleURL === 'string' ? provider.consoleURL.trim() : ''
+      const configured = keyRef.length > 0 && keys[keyRef] === true
       const title = group.id === 'builtin'
         ? t('builtin')
         : group.id === 'other'
@@ -352,27 +421,35 @@ window.__ModuleLoader__.load({
       return h('section', { className: 'wh-group' },
         h('div', { className: 'wh-group-head' },
           h('span', { className: 'wh-group-name' }, title),
-          provider !== undefined && keyRef === '' ? h(UI.Tag, { tone: 'quiet' }, t('keyFree')) : null),
+          h('span', { className: 'wh-group-tags' },
+            // Only the abnormal state has to interrupt a scan.
+            provider !== undefined && keyRef.length > 0 && !configured
+              ? h('span', { className: 'wh-chip' }, t('keyUnset'))
+              : null,
+            provider !== undefined && keyRef.length === 0
+              ? h('span', { className: 'wh-chip wh-chip-quiet' }, t('keyFree'))
+              : null)),
         h('div', { className: 'wh-panel' },
+          group.names.map(name => h(ToolRow, {
+            key: name,
+            t,
+            name,
+            checked: enabled(name, tools),
+            busy,
+            onToggle,
+          })),
           keyRef.length > 0
-            ? h(KeyField, {
+            ? h(KeyBlock, {
               key: keyRef,
               t,
               keyRef,
-              configured: keys[keyRef] === true,
+              configured,
               consoleURL,
               busy,
               onSave: onSaveKey,
               onClear: onClearKey,
             })
-            : null,
-          group.names.map(name => h(ToolRow, {
-            key: name,
-            name,
-            checked: enabled(name, tools),
-            busy,
-            onToggle,
-          }))))
+            : null))
     }
 
     function PanelInner(props) {

@@ -39,7 +39,9 @@ async function run(ctx, adapter, tool, settings, args, exec) {
   if (provider.baseURL.length === 0) {
     throw new Error(`${adapter.title}: no endpoint configured; set providers.${adapter.id}.baseURL`)
   }
-  // A missing credential is only fatal when the provider says it needs one.
+  // A missing credential is only fatal when the provider says it needs one; a
+  // tool that refuses keyless calls reports that in its own error, which is
+  // more accurate than a guess made here.
   const key = await resolveKey(ctx, provider.keyRef)
   if (provider.keyRef.length > 0 && key === undefined && adapter.keyRequired === true) {
     throw new Error(`${adapter.title}: credential ${provider.keyRef} is not set; add it under Keys on the Plugins page`)
@@ -58,7 +60,9 @@ function definition(ctx, adapter, tool, name, settings) {
     name,
     description: tool.description,
     parameters: tool.parameters,
-    timeoutMs: providerSettings(settings, adapter).timeoutMs,
+    // A tool may legitimately run longer than a fast query (research), so its
+    // own limit wins over the provider-wide one.
+    timeoutMs: tool.timeoutMs ?? providerSettings(settings, adapter).timeoutMs,
     output: {
       schema: { type: 'string' },
       render: (_args, value) => [{ type: 'text', text: typeof value === 'string' ? value : String(value ?? '') }],

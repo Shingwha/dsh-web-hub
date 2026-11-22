@@ -418,8 +418,7 @@ window.__ModuleLoader__.load({
 
     /** Display name of the provider owning a wire tool name. */
     function providerTitle(toolName) {
-      const cut = toolName.indexOf('_')
-      const id = cut === -1 ? toolName : toolName.slice(0, cut)
+      const id = providerId(toolName)
       const providers = readSettings().providers
       const title = providers !== null && providers !== undefined ? providers[id]?.title : undefined
       if (typeof title === 'string' && title.trim().length > 0) return title.trim()
@@ -462,6 +461,7 @@ window.__ModuleLoader__.load({
       '.wh-card-link:hover{text-decoration:underline}',
       '.wh-card-marks{display:inline-flex;align-items:center;gap:4px;flex:none}',
       '.wh-card-more{font-size:10px;line-height:1.5;color:var(--dsw-alias-label-tertiary)}',
+      '.wh-card-target{display:inline-flex;flex:none;align-items:center;margin-left:auto}',
       '.wh-card-meta{flex:none;margin-left:auto;font-size:11px;line-height:1.5;color:var(--dsw-alias-label-tertiary);font-variant-numeric:tabular-nums}',
       '.wh-card-failed .wh-card-meta{color:inherit}',
       '.wh-card-chevron{flex:none;display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;margin:0;padding:0;border:0;background:none;color:inherit;cursor:pointer;transition:transform .12s ease}',
@@ -526,6 +526,20 @@ window.__ModuleLoader__.load({
       let hash = 0
       for (let index = 0; index < host.length; index += 1) hash = (hash * 31 + host.charCodeAt(index)) % 360
       return hash
+    }
+
+    /** Home host of each provider, whose favicon marks the row. */
+    const PROVIDER_HOSTS = {
+      anysearch: 'anysearch.com',
+      exa: 'exa.ai',
+      tavily: 'tavily.com',
+      firecrawl: 'firecrawl.dev',
+    }
+
+    /** Provider id of a wire tool name (`tavily_crawl` -> `tavily`). */
+    function providerId(toolName) {
+      const cut = toolName.indexOf('_')
+      return cut === -1 ? toolName : toolName.slice(0, cut)
     }
 
     /** Distinct result hosts in order, for the marks shown before expanding. */
@@ -743,8 +757,8 @@ window.__ModuleLoader__.load({
         onClick: expandable ? toggle : undefined,
       },
         h('span', { className: 'wh-card-icon' },
-          kind === 'fetch' && hasHttpUrl(url)
-            ? h(SiteIcon, { url, size: 14 })
+          PROVIDER_HOSTS[providerId(toolName)] !== undefined
+            ? h(SiteIcon, { url: `https://${PROVIDER_HOSTS[providerId(toolName)]}`, size: 14 })
             : h(CardIcon, { paths: kind === 'search' ? GLOBE_PATH : DOCUMENT_PATH })),
         h('span', { className: 'wh-card-label' },
           t(kind === 'search' ? 'cardSearch' : 'cardExtract'),
@@ -765,6 +779,9 @@ window.__ModuleLoader__.load({
           ? h('span', { className: 'wh-card-marks' },
             marks.map(host => h(SiteIcon, { key: host, url: `https://${host}`, size: 14 })),
             extraHosts > 0 ? h('span', { className: 'wh-card-more' }, `+${extraHosts}`) : null)
+          : null,
+        kind === 'fetch' && hasHttpUrl(url)
+          ? h('span', { className: 'wh-card-target' }, h(SiteIcon, { url, size: 14 }))
           : null,
         h('span', { className: 'wh-card-meta' }, status),
         expandable

@@ -18,28 +18,28 @@
             baseURL: 'https://api.anysearch.com/mcp'
             keyRef: ANYSEARCH_API_KEY
             consoleURL: 'https://www.anysearch.com/console/api-keys'
-            maxResults: 8
+            maxResults: 0
             timeoutMs: 30000
           exa:
             title: Exa
             baseURL: 'https://mcp.exa.ai/mcp'
             keyRef: EXA_API_KEY
             consoleURL: 'https://dashboard.exa.ai/api-keys'
-            maxResults: 8
+            maxResults: 0
             timeoutMs: 30000
           tavily:
             title: Tavily
             baseURL: 'https://mcp.tavily.com/mcp/'
             keyRef: TAVILY_API_KEY
             consoleURL: 'https://app.tavily.com'
-            maxResults: 8
+            maxResults: 0
             timeoutMs: 30000
           firecrawl:
             title: Firecrawl
             baseURL: 'https://mcp.firecrawl.dev/v2/mcp'
             keyRef: FIRECRAWL_API_KEY
             consoleURL: 'https://www.firecrawl.dev/app/api-keys'
-            maxResults: 8
+            maxResults: 0
             timeoutMs: 60000
         tools:
           # Built-ins stay on: installing this plugin must not remove a tool

@@ -228,6 +228,13 @@ export default {
         required: ['input'],
         additionalProperties: false,
       },
+      // The report is an answer plus its sources, which is the search shape:
+      // readable text for the model, one source list for the card data.
+      parse: (text) => {
+        const payload = unwrap(text)
+        if (typeof payload?.content !== 'string' || payload.content.length === 0) return { text }
+        return searchResult({ items: sources(payload.sources), answer: payload.content })
+      },
     },
   },
 }

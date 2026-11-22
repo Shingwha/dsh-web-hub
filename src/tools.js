@@ -61,7 +61,11 @@ async function run(ctx, provider, tool, settings, args, exec) {
     return normalize(tool.parse === undefined ? { text } : tool.parse(text, { args: input, cfg }))
   } catch (error) {
     if (exec.signal?.aborted === true) throw error
-    throw new Error(`${provider.title}: ${error instanceof Error ? error.message : String(error)}`)
+    // A bare "fetch failed" says nothing; the cause carries the socket reason.
+    const reason = error instanceof Error
+      ? `${error.message}${error.cause?.code === undefined ? '' : ` (${error.cause.code})`}`
+      : String(error)
+    throw new Error(`${provider.title}: ${reason}`)
   }
 }
 

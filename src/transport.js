@@ -37,6 +37,30 @@ function parsePayload(text) {
   return undefined
 }
 
+
+/** A dropped connection or a cold DNS lookup fails the first fetch and not the second. */
+function transient(error) {
+  if (error === null || typeof error !== 'object') return false
+  return error.name === 'TypeError' || error.cause !== undefined
+}
+
+/**
+ * Run one request, retrying a transient network failure once.
+ *
+ * These calls are read-only, and the observed failure mode is a connection that
+ * fails once and succeeds immediately after, so one retry costs little and turns
+ * an intermittent outage into a slow call.
+ */
+async function once(request, signal) {
+  try {
+    return await request()
+  } catch (error) {
+    if (signal?.aborted === true || !transient(error)) throw error
+    await new Promise(resolve => setTimeout(resolve, 250))
+    return request()
+  }
+}
+
 /** Turn an HTTP failure into one actionable line. */
 function failure(status, body) {
   const excerpt = body.trim().slice(0, 200)
@@ -59,13 +83,14 @@ function failure(status, body) {
  * @returns the tool's text output
  */
 export async function callTool({ url, name, args, headers = {}, signal }) {
-  const response = await fetch(url, {
+  const request = () => fetch(url, {
     method: 'POST',
     signal,
     headers,
     body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name, arguments: args } }),
   })
 
+  const response = await once(request, signal)
   const text = await response.text()
   if (!response.ok) throw failure(response.status, text)
 

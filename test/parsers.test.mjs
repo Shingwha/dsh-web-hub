@@ -61,6 +61,13 @@ test('tavily crawl turns pages into sources', () => {
   assert.deepEqual(result.meta.sources.map(item => item.url), ['https://docs.example/a', 'https://docs.example/b'])
 })
 
+test('tavily research reads its report and sources', () => {
+  const result = parse(tavily, 'research', 'tavily-research.json')
+  assert.match(result.text, /^Cordis is the plugin runtime under DeepSeek Harness\.\n\nExternal web content/)
+  assert.match(result.text, /Sources:\n- \[Cordis\]\(https:\/\/a\.example\/cordis\)/)
+  assert.deepEqual(result.meta.sources.map(item => item.url), ['https://a.example/cordis'])
+})
+
 test('firecrawl search reads its web list', () => {
   const result = parse(firecrawl, 'search', 'firecrawl-search.json')
   assert.equal(result.meta.sources.length, 1)

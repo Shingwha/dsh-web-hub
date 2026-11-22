@@ -55,5 +55,9 @@
           exa_extract: false
           tavily_search: false
           tavily_extract: false
+          # Crawl, map, and research need a Tavily API key; keyless covers search and extract.
+          tavily_crawl: false
+          tavily_map: false
+          tavily_research: false
           firecrawl_search: false
           firecrawl_extract: false

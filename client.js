@@ -431,7 +431,14 @@ window.__ModuleLoader__.load({
       '.wh-card-empty{margin:0;font-size:12px;line-height:1.5;color:var(--dsw-alias-label-tertiary)}',
       '.wh-card-preview{margin:0;font-size:12px;line-height:1.55;color:var(--dsw-alias-label-secondary);overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical}',
       '.wh-card-text{margin:0;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;line-height:1.6;white-space:pre-wrap;overflow-wrap:anywhere;color:var(--dsw-alias-label-secondary)}',
-      '.wh-item{display:flex;flex-direction:column;gap:2px;min-width:0}',
+      '.wh-item{display:flex;gap:8px;min-width:0}',
+      '.wh-item-mark{display:inline-flex;flex:none;margin-top:1px}',
+      '.wh-item-main{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}',
+      '.wh-site{position:relative;display:inline-flex;flex:none;align-items:center;justify-content:center;overflow:hidden;border-radius:4px;color:#fff;font-size:9px;font-weight:600;line-height:1}',
+      '.wh-site-letter{position:relative;z-index:0}',
+      '.wh-site-img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;opacity:0;transition:opacity .12s ease}',
+      '.wh-site[data-loaded=true] .wh-site-letter{display:none}',
+      '.wh-site[data-loaded=true] .wh-site-img{opacity:1}',
       '.wh-item-title{font-size:12.5px;line-height:1.5;color:var(--dsw-alias-label-primary);text-decoration:none}',
       '.wh-item-title:hover{text-decoration:underline}',
       '.wh-item-meta{font-size:11px;line-height:1.5;color:var(--dsw-alias-label-tertiary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
@@ -466,6 +473,67 @@ window.__ModuleLoader__.load({
     ]
 
     const CHEVRON_PATH = ['M4.5 6.2 8 9.7l3.5-3.5']
+
+    /** Hostname without `www.`, used for display and the tile monogram. */
+    function hostOf(url) {
+      try {
+        return new URL(url).hostname.replace(/^www\./, '')
+      } catch {
+        return url
+      }
+    }
+
+    /** Stable muted colour per host, so a site keeps the same tile. */
+    function hostHue(host) {
+      let hash = 0
+      for (let index = 0; index < host.length; index += 1) hash = (hash * 31 + host.charCodeAt(index)) % 360
+      return hash
+    }
+
+    /** Whether a value is a URL the browser can open and read a host from. */
+    function hasHttpUrl(url) {
+      try {
+        const { protocol } = new URL(url)
+        return protocol === 'http:' || protocol === 'https:'
+      } catch {
+        return false
+      }
+    }
+
+    /**
+     * A site's mark: its favicon once the browser loads it, otherwise a letter
+     * tile. The image is lazy and sends no referrer, and a failure keeps the
+     * tile, so the card never shows a broken image.
+     */
+    function SiteIcon(props) {
+      const { url, favicon, size = 16 } = props
+      const host = hostOf(url)
+      const [loaded, setLoaded] = React.useState(false)
+      const [failed, setFailed] = React.useState(false)
+      const src = typeof favicon === 'string' && favicon.length > 0 ? favicon : `https://${host}/favicon.ico`
+      return h('span', {
+        className: 'wh-site',
+        'data-loaded': loaded,
+        'aria-hidden': 'true',
+        style: {
+          width: `${size}px`,
+          height: `${size}px`,
+          background: loaded ? 'transparent' : `hsl(${hostHue(host)} 38% 42%)`,
+        },
+      },
+        h('span', { className: 'wh-site-letter' }, host.slice(0, 1).toUpperCase()),
+        failed
+          ? null
+          : h('img', {
+            className: 'wh-site-img',
+            src,
+            alt: '',
+            loading: 'lazy',
+            referrerPolicy: 'no-referrer',
+            onLoad: () => setLoaded(true),
+            onError: () => setFailed(true),
+          }))
+    }
 
     /** The call head of any Tool phase; its arguments are a JSON string. */
     function callOf(block) {
@@ -513,6 +581,7 @@ window.__ModuleLoader__.load({
         ...typeof value.title === 'string' ? { title: value.title } : {},
         ...typeof value.snippet === 'string' ? { snippet: value.snippet } : {},
         ...typeof value.publishedAt === 'string' ? { publishedAt: value.publishedAt } : {},
+        ...typeof value.favicon === 'string' ? { favicon: value.favicon } : {},
       }
     }
 
@@ -553,11 +622,13 @@ window.__ModuleLoader__.load({
         .filter(part => typeof part === 'string' && part.length > 0)
         .join(' · ')
       return h('div', { className: 'wh-item' },
-        h('a', { className: 'wh-item-title', href: source.url, target: '_blank', rel: 'noreferrer noopener' }, label),
-        meta.length > 0 ? h('span', { className: 'wh-item-meta' }, meta) : null,
-        typeof source.snippet === 'string' && source.snippet.length > 0
-          ? h('span', { className: 'wh-item-snippet' }, source.snippet)
-          : null)
+        h('span', { className: 'wh-item-mark' }, h(SiteIcon, { url: source.url, favicon: source.favicon })),
+        h('div', { className: 'wh-item-main' },
+          h('a', { className: 'wh-item-title', href: source.url, target: '_blank', rel: 'noreferrer noopener' }, label),
+          meta.length > 0 ? h('span', { className: 'wh-item-meta' }, meta) : null,
+          typeof source.snippet === 'string' && source.snippet.length > 0
+            ? h('span', { className: 'wh-item-snippet' }, source.snippet)
+            : null))
     }
 
     /** The opened body: source entries, a page preview, or the raw text. */
@@ -574,7 +645,16 @@ window.__ModuleLoader__.load({
         const status = `HTTP ${card.statusCode}${card.truncated ? ` · ${t('cardContentTruncated')}` : ''}`
         const preview = pageBody(text)
         return h('div', { className: 'wh-card-body' },
-          h('p', { className: 'wh-card-empty' }, status),
+          h('div', { className: 'wh-item' },
+            h('span', { className: 'wh-item-mark' }, h(SiteIcon, { url: card.url })),
+            h('div', { className: 'wh-item-main' },
+              h('a', {
+                className: 'wh-item-title',
+                href: card.url,
+                target: '_blank',
+                rel: 'noreferrer noopener',
+              }, displayUrl(card.url)),
+              h('span', { className: 'wh-item-meta' }, status))),
           preview.length > 0 ? h('p', { className: 'wh-card-preview' }, preview) : null)
       }
       return h('div', { className: 'wh-card-body' },
@@ -621,7 +701,10 @@ window.__ModuleLoader__.load({
         className: failed ? 'wh-card-row wh-card-failed' : 'wh-card-row',
         onClick: expandable ? toggle : undefined,
       },
-        h('span', { className: 'wh-card-icon' }, h(CardIcon, { paths: kind === 'search' ? GLOBE_PATH : DOCUMENT_PATH })),
+        h('span', { className: 'wh-card-icon' },
+          kind === 'fetch' && hasHttpUrl(url)
+            ? h(SiteIcon, { url, size: 14 })
+            : h(CardIcon, { paths: kind === 'search' ? GLOBE_PATH : DOCUMENT_PATH })),
         h('span', { className: 'wh-card-label' }, t(kind === 'search' ? 'cardSearch' : 'cardExtract')),
         kind === 'search'
           ? (query.length > 0 ? h('span', { className: 'wh-card-summary' }, query) : null)

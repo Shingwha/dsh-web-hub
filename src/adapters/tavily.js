@@ -112,6 +112,105 @@ const tavily = {
         return text
       },
     },
+
+    crawl: {
+      description:
+        'Crawl a site from one root URL with Tavily and return the pages it extracted, with configurable depth, '
+        + 'breadth, and result count. Needs a Tavily API key; keyless access covers search and extract only.',
+      parameters: {
+        type: 'object',
+        properties: {
+          url: { type: 'string', description: 'Root URL to begin the crawl.' },
+          max_depth: { type: 'integer', minimum: 1, description: 'How far from the root the crawler may explore.' },
+          max_breadth: { type: 'integer', minimum: 1, description: 'Links followed per level of the tree.' },
+          limit: { type: 'integer', minimum: 1, description: 'Total links processed before stopping.' },
+          instructions: { type: 'string', description: 'Guidance on which kinds of pages to return.' },
+          select_paths: {
+            type: 'array', items: { type: 'string' },
+            description: 'Regexes that keep matching URL paths, such as /docs/.*.',
+          },
+          select_domains: {
+            type: 'array', items: { type: 'string' },
+            description: 'Regexes that restrict crawling to matching domains.',
+          },
+          allow_external: { type: 'boolean', description: 'Return external links in the response.' },
+          extract_depth: {
+            type: 'string', enum: ['basic', 'advanced'],
+            description: 'Advanced also extracts tables and embedded content, at higher latency.',
+          },
+          format: { type: 'string', enum: ['markdown', 'text'], description: 'Format of each page body.' },
+          include_favicon: { type: 'boolean', description: 'Include each page favicon URL.' },
+          chunks_per_source: {
+            type: 'integer', minimum: 1, maximum: 5,
+            description: 'Chunks per source; requires instructions.',
+          },
+        },
+        required: ['url'],
+        additionalProperties: false,
+      },
+      run: ({ cfg, key, args, signal }) => sender(cfg, key)('tavily_crawl', args, signal),
+    },
+
+    map: {
+      description:
+        'Map a site structure from one root URL with Tavily and return the URLs it found. Needs a Tavily API key; '
+        + 'keyless access covers search and extract only.',
+      parameters: {
+        type: 'object',
+        properties: {
+          url: { type: 'string', description: 'Root URL to begin the mapping.' },
+          max_depth: { type: 'integer', minimum: 1, description: 'How far from the root the traversal may explore.' },
+          max_breadth: { type: 'integer', minimum: 1, description: 'Links followed per level of the tree.' },
+          limit: { type: 'integer', minimum: 1, description: 'Total links processed before stopping.' },
+          instructions: { type: 'string', description: 'Guidance on which URLs to keep.' },
+          select_paths: {
+            type: 'array', items: { type: 'string' },
+            description: 'Regexes that keep matching URL paths, such as /docs/.*.',
+          },
+          select_domains: {
+            type: 'array', items: { type: 'string' },
+            description: 'Regexes that restrict traversal to matching domains.',
+          },
+          allow_external: { type: 'boolean', description: 'Return external links in the response.' },
+        },
+        required: ['url'],
+        additionalProperties: false,
+      },
+      run: ({ cfg, key, args, signal }) => sender(cfg, key)('tavily_map', args, signal),
+    },
+
+    research: {
+      description:
+        'Run one multi-source research task with Tavily and return its written answer. Slower and more expensive '
+        + 'than a search; use it for synthesis, not a list of pages. Needs a Tavily API key.',
+      parameters: {
+        type: 'object',
+        properties: {
+          input: { type: 'string', description: 'A complete description of the research task.' },
+          model: {
+            type: 'string', enum: ['mini', 'pro', 'auto'],
+            description: 'mini suits narrow tasks with few subtopics; pro suits broad ones.',
+          },
+          files: {
+            type: 'array', maxItems: 5,
+            items: {
+              type: 'object',
+              properties: {
+                name: { type: 'string', description: 'File name, such as notes.md.' },
+                data: { type: 'string', description: 'Base64-encoded file content.' },
+                type: { type: 'string', enum: ['base64'] },
+              },
+              required: ['name', 'data'],
+              additionalProperties: false,
+            },
+            description: 'Base64 .txt/.md/.json attachments, up to 80,000 words combined.',
+          },
+        },
+        required: ['input'],
+        additionalProperties: false,
+      },
+      run: ({ cfg, key, args, signal }) => sender(cfg, key)('tavily_research', args, signal),
+    },
   },
 }
 

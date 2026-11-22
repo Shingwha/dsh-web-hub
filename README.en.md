@@ -63,7 +63,7 @@ Keys are stored in the local credential store; the configuration keeps only the 
 |---|---|---|---|
 | **AnySearch** | ✅ | ✅ | ✅ anonymous, lower limits |
 | **Exa** | ✅ | ✅ | ✅ |
-| **Tavily** | ✅ | ✅ | ✅ daily allowance, then needs a key |
+| **Tavily** | ✅ | ✅ | ✅ daily allowance; crawl/map/research need a key |
 | **Firecrawl** | ✅ | ✅ | ✅ low anonymous allowance |
 
 ## Uninstall

@@ -20,6 +20,12 @@
 - 关闭的工具不进模型上下文，也不占 token
 - 停用或卸载插件，工具与内置网页工具都自动恢复
 
+## 工具清单
+
+每个来源接入其 MCP 服务 `tools/list` 返回的全部工具，名字为 `来源_工具`（如 `tavily_crawl`、`exa_search`）。
+
+唯一的例外是 Firecrawl 的 `firecrawl_parse`：托管端点要求两阶段文件上传（先取上传指令、本地 PUT、再用 `uploadRef` 调用），我们的单次 `tools/call` 传输无法完成，因此不暴露。
+
 ## 工具结果的两条投影
 
 每个工具返回 `{ text, meta }`：

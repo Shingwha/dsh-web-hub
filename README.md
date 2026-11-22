@@ -61,7 +61,7 @@ npm pack
 |---|---|---|---|
 | **AnySearch** | ✅ | ✅ | ✅ 匿名，限额较低 |
 | **Exa** | ✅ | ✅ | ✅ |
-| **Tavily** | ✅ | ✅ | ✅ 有每日额度，用尽后需 key |
+| **Tavily** | ✅ | ✅ | ✅ 有每日额度；crawl/map/research 需 key |
 | **Firecrawl** | ✅ | ✅ | ✅ 匿名额度低 |
 
 ## 卸载

@@ -405,6 +405,23 @@ window.__ModuleLoader__.load({
     // here is ours and a DSH upgrade cannot change it. Data comes from the
     // result's persisted `meta`; anything unreadable falls back to the text.
 
+    /**
+     * Live settings for the cards, wired to the hub controller when the plugin
+     * starts. A card needs one field from it: the configured title of the
+     * provider that owns the tool.
+     */
+    let readSettings = () => ({})
+
+    /** Display name of the provider owning a wire tool name. */
+    function providerTitle(toolName) {
+      const cut = toolName.indexOf('_')
+      const id = cut === -1 ? toolName : toolName.slice(0, cut)
+      const providers = readSettings().providers
+      const title = providers !== null && providers !== undefined ? providers[id]?.title : undefined
+      if (typeof title === 'string' && title.trim().length > 0) return title.trim()
+      return id.charAt(0).toUpperCase() + id.slice(1)
+    }
+
     /** Every tool name that renders through the search card. */
     const SEARCH_TOOLS = ['anysearch_search']
 
@@ -420,6 +437,7 @@ window.__ModuleLoader__.load({
       '.wh-card-failed{color:var(--dsw-alias-state-error-primary)}',
       '.wh-card-icon{flex:none;display:inline-flex;align-items:center;color:currentColor}',
       '.wh-card-label{flex:none;font-size:12.5px;line-height:1.5;color:var(--dsw-alias-label-secondary)}',
+      '.wh-card-provider{color:var(--dsw-alias-label-tertiary)}',
       '.wh-card-summary{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12.5px;line-height:1.5}',
       '.wh-card-link{color:var(--dsw-alias-link);text-decoration:none}',
       '.wh-card-link:hover{text-decoration:underline}',
@@ -670,7 +688,7 @@ window.__ModuleLoader__.load({
     }
 
     function ToolCard(props) {
-      const { t, kind, phase, block } = props
+      const { t, kind, phase, block, toolName } = props
       const [open, setOpen] = React.useState(false)
       const args = callArguments(block)
       const card = kind === 'search' ? searchCard(block) : fetchCard(block)
@@ -698,6 +716,7 @@ window.__ModuleLoader__.load({
       // they can read, and the URL keeps its own link semantics.
       const row = h('div', {
         className: failed ? 'wh-card-row wh-card-failed' : 'wh-card-row',
+        title: toolName,
         'data-expandable': expandable,
         onClick: expandable ? toggle : undefined,
       },
@@ -705,7 +724,9 @@ window.__ModuleLoader__.load({
           kind === 'fetch' && hasHttpUrl(url)
             ? h(SiteIcon, { url, size: 14 })
             : h(CardIcon, { paths: kind === 'search' ? GLOBE_PATH : DOCUMENT_PATH })),
-        h('span', { className: 'wh-card-label' }, t(kind === 'search' ? 'cardSearch' : 'cardExtract')),
+        h('span', { className: 'wh-card-label' },
+          t(kind === 'search' ? 'cardSearch' : 'cardExtract'),
+          h('span', { className: 'wh-card-provider' }, ` · ${providerTitle(toolName)}`)),
         kind === 'search'
           ? (query.length > 0 ? h('span', { className: 'wh-card-summary' }, query) : null)
           : (url.length > 0
@@ -862,6 +883,7 @@ window.__ModuleLoader__.load({
         ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'dsh-web-hub: dictionaries')
         const t = ctx.locale.bind(NS)
         const controller = new HubController(ctx, t)
+        readSettings = () => controller.state.value ?? {}
         ctx.effect(() => () => controller.dispose(), 'dsh-web-hub: controller')
         ctx.effect(
           () => ctx.on('connection/reset', () => { void controller.load() }),

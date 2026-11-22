@@ -8,7 +8,7 @@ Search from one service, fetch with another, or mix in the built-in official too
 
 ## Requirements
 
-- DeepSeek Harness `>= 0.2.2-rc.3` (the build with the web GUI)
+- DeepSeek Harness `>= 0.2.1-rc.5` (the build with the web GUI)
 - No extra runtime; an API key is optional
 
 ## Install
@@ -65,6 +65,7 @@ Keys are stored in the local credential store; the configuration keeps only the 
 | **Exa** | ✅ | ✅ | ✅ |
 | **Tavily** | ✅ | ✅ | ✅ daily allowance; crawl/map/research need a key |
 | **Firecrawl** | ✅ | ✅ | ✅ low anonymous allowance |
+| **Yuanbao Search** | ✅ | — | ❌ needs a Tencent Cloud key; free quota after enabling |
 
 ## Uninstall
 

@@ -41,6 +41,13 @@
             consoleURL: 'https://www.firecrawl.dev/app/api-keys'
             maxResults: 0
             timeoutMs: 60000
+          yuanbao:
+            title: 元宝搜索
+            baseURL: 'https://api.wsa.cloud.tencent.com/Mcp'
+            keyRef: WSA_API_KEY
+            consoleURL: 'https://console.cloud.tencent.com/wsapi/index?tab=apikey'
+            maxResults: 0
+            timeoutMs: 30000
         tools:
           # Built-ins stay on: installing this plugin must not remove a tool
           # the model could already use. Everything else is opt-in.
@@ -60,4 +67,5 @@
           tavily_map: false
           tavily_research: false
           firecrawl_search: false
+          yuanbao_search: false
           firecrawl_extract: false

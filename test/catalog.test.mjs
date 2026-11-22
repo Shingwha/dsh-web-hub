@@ -23,7 +23,7 @@ test('a card and a key requirement are declared where the tool is', () => {
   assert.equal(tools.tavily_research.card, undefined)
   assert.deepEqual(
     Object.keys(tools).filter(name => tools[name].needsKey === true),
-    ['tavily_crawl', 'tavily_map', 'tavily_research'],
+    ['tavily_crawl', 'tavily_map', 'tavily_research', 'yuanbao_search'],
   )
 })
 

@@ -28,6 +28,8 @@
 
 Tavily 的 `crawl` / `map` / `research` 需要 API key（免 key 只覆盖 search 与 extract）；面板在 key 未配置时给这些工具标 `需 API Key`。
 
+元宝搜索（`yuanbao_search`）只有一个工具 `SearchPro`，必须先在腾讯云控制台开通服务并创建 API KEY；面板同样标 `需 API Key`。它的返回是腾讯云 API 的信封（`Pages` 数组，每项是 JSON 字符串），解析在 `src/providers/yuanbao.js`。
+
 ## 工具结果的两条投影
 
 每个工具返回 `{ text, meta }`：

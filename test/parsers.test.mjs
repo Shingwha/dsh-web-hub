@@ -7,6 +7,7 @@ import anysearch from '../src/providers/anysearch.js'
 import exa from '../src/providers/exa.js'
 import firecrawl from '../src/providers/firecrawl.js'
 import tavily from '../src/providers/tavily.js'
+import yuanbao from '../src/providers/yuanbao.js'
 
 const fixture = name => readFileSync(fileURLToPath(new URL(`./fixtures/${name}`, import.meta.url)), 'utf8')
 const cfg = { baseURL: 'https://example.invalid', maxResults: 2, timeoutMs: 1000 }
@@ -101,6 +102,24 @@ test('firecrawl scrape keeps the page and its reported status', () => {
   assert.equal(result.meta.statusCode, 200)
   assert.equal(result.meta.url, 'https://example.com')
   assert.match(result.text, /^# Example Domain\n\nhttps:\/\/example\.com\n\n# Example/)
+})
+
+
+test('yuanbao reads its Pages envelope', () => {
+  const result = parse(yuanbao, 'search', 'yuanbao-search.json')
+  assert.equal(result.meta.sources.length, 2)
+  assert.deepEqual(result.meta.sources[0], {
+    url: 'https://www.weather.com.cn/beijing/',
+    title: '北京天气预报',
+    snippet: '今天北京多云转晴，气温 3~12℃。',
+    publishedAt: '2026/11/23 10:00:00',
+    favicon: 'https://cdn-yb.icon.qq.com/zuowei_dir/www_weather_com_cn.ico',
+  })
+  assert.match(result.text, /^External web content/)
+})
+
+test('yuanbao reports a disabled service as an error', () => {
+  assert.throws(() => parse(yuanbao, 'search', 'yuanbao-error.json'), /ResourceNotFound: 服务未开通/)
 })
 
 test('tavily reports a keyless cap as an error, not a payload', () => {

@@ -7,12 +7,14 @@ import anysearch from './anysearch.js'
 import exa from './exa.js'
 import firecrawl from './firecrawl.js'
 import tavily from './tavily.js'
+import yuanbao from './yuanbao.js'
 
 export const providers = {
   [anysearch.id]: anysearch,
   [exa.id]: exa,
   [firecrawl.id]: firecrawl,
   [tavily.id]: tavily,
+  [yuanbao.id]: yuanbao,
 }
 
 /**

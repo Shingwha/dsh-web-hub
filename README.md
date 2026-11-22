@@ -8,7 +8,7 @@
 
 ## 环境要求
 
-- DeepSeek Harness `>= 0.2.2-rc.3`（带 Web GUI 的版本）
+- DeepSeek Harness `>= 0.2.1-rc.5`（带 Web GUI 的版本）
 - 无需额外运行时；API Key 可选
 
 ## 安装
@@ -63,6 +63,7 @@ npm pack
 | **Exa** | ✅ | ✅ | ✅ |
 | **Tavily** | ✅ | ✅ | ✅ 有每日额度；crawl/map/research 需 key |
 | **Firecrawl** | ✅ | ✅ | ✅ 匿名额度低 |
+| **元宝搜索** | ✅ | — | ❌ 需腾讯云 key，开通后有免费额度 |
 
 ## 卸载
 

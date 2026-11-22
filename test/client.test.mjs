@@ -10,12 +10,16 @@ import { catalog } from '../src/catalog.js'
 
 const CLIENT = fileURLToPath(new URL('../client.js', import.meta.url))
 
+/** Set to force every `useState` in the tree to one value, so a closed card can be
+ *  rendered open without a re-render loop. */
+let stateOverride
+
 /** Minimal React stand-in: elements are plain objects, hooks return fixed state. */
 const React = {
   createElement: (type, props, ...children) => ({ type, props: props ?? {}, children }),
   Fragment: 'fragment',
   Component: class { constructor(props) { this.props = props } },
-  useState: initial => [typeof initial === 'function' ? initial() : initial, () => {}],
+  useState: initial => [stateOverride ?? (typeof initial === 'function' ? initial() : initial), () => {}],
   useId: () => 'id',
   useMemo: fn => fn(),
   createContext: () => ({}),
@@ -102,13 +106,14 @@ function walkNodes(node, out = []) {
     const props = children === undefined ? { ...node.props } : { ...node.props, children }
     return walkNodes(node.type.prototype?.render !== undefined ? new node.type(props).render() : node.type(props), out)
   }
+  const own = node.children.length === 1 && typeof node.children[0] === 'string' ? node.children[0] : undefined
   out.push({
     type: node.type,
     className: node.props?.className,
     href: node.props?.href,
     src: node.props?.src,
     on: node.props?.['data-on'],
-    text: typeof node.props?.children === 'string' ? node.props.children : undefined,
+    text: typeof node.props?.children === 'string' ? node.props.children : own,
   })
   for (const child of node.children ?? []) walkNodes(child, out)
   return out
@@ -193,4 +198,28 @@ test('the panel lays tools out as cards, one per tool', async () => {
   assert.ok(nodes.some(node => node.text === '1/2'), 'one of two AnySearch tools is on')
   assert.ok(nodes.some(node => node.className === 'wh-note'), 'a key-only tool says so while unconfigured')
   assert.ok(nodes.filter(node => node.src?.startsWith('data:image')).length >= 3, 'each group head carries a bundled mark')
+})
+
+test('an expanded search numbers its sources', async () => {
+  const { registrations } = await load()
+  const view = registrations.find(entry => entry.registration.key === 'anysearch_search').component
+  const block = {
+    kind: 'result',
+    isError: false,
+    content: [{ type: 'text', text: 'x' }],
+    call: { name: 'anysearch_search', argsRaw: JSON.stringify({ query: 'q' }) },
+    meta: {
+      truncated: false,
+      sources: [
+        { url: 'https://a.example/1', title: 'A' },
+        { url: 'https://b.example/2', title: 'B' },
+        { url: 'https://c.example/3', title: 'C' },
+      ],
+    },
+  }
+  stateOverride = true
+  const nodes = walkNodes(view({ t, phase: 'result', toolName: 'anysearch_search', block, useDisclosure: () => ({}) }))
+  stateOverride = undefined
+  const indexes = nodes.filter(node => node.className === 'wh-item-index').map(node => node.text)
+  assert.deepEqual(indexes, ['1', '2', '3'])
 })

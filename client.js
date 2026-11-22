@@ -481,10 +481,11 @@ window.__ModuleLoader__.load({
       '.wh-card-failed .wh-card-meta{color:inherit}',
       '.wh-card-chevron{flex:none;margin-left:auto;display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;margin:0;padding:0;border:0;background:none;color:inherit;cursor:pointer;transition:transform .12s ease}',
       '.wh-card-chevron[aria-expanded=true]{transform:rotate(180deg)}',
-      '.wh-card-body{display:flex;flex-direction:column;gap:10px;padding:4px 0 10px 22px}',
+      '.wh-card-body{display:flex;flex-direction:column;gap:10px;padding:4px 0 10px}',
       '.wh-card-empty{margin:0;font-size:12px;line-height:1.5;color:var(--dsw-alias-label-tertiary)}',
       '.wh-card-text{margin:0;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;line-height:1.6;white-space:pre-wrap;overflow-wrap:anywhere;color:var(--dsw-alias-label-secondary)}',
       '.wh-item{display:flex;gap:8px;min-width:0}',
+      '.wh-item-index{flex:none;width:14px;text-align:right;font-size:11px;line-height:1.6;color:var(--dsw-alias-label-tertiary);font-variant-numeric:tabular-nums}',
       '.wh-item-mark{display:inline-flex;flex:none;margin-top:1px}',
       '.wh-item-main{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}',
       '.wh-site{position:relative;display:inline-flex;flex:none;align-items:center;justify-content:center;overflow:hidden;border-radius:4px;color:#fff;font-size:9px;font-weight:600;line-height:1}',
@@ -729,12 +730,15 @@ window.__ModuleLoader__.load({
     }
 
     function SourceItem(props) {
-      const { source } = props
+      const { source, index } = props
       const label = typeof source.title === 'string' && source.title.length > 0 ? source.title : displayUrl(source.url)
       const meta = [displayUrl(source.url), shortDate(source.publishedAt)]
         .filter(part => typeof part === 'string' && part.length > 0)
         .join(' · ')
       return h('div', { className: 'wh-item' },
+        // The ordinal is what makes a result countable at a glance, and what a
+        // reader can cite back ("the third one").
+        h('span', { className: 'wh-item-index' }, String(index + 1)),
         h('span', { className: 'wh-item-mark' }, h(SiteIcon, { url: source.url, favicon: source.favicon })),
         h('div', { className: 'wh-item-main' },
           h('a', { className: 'wh-item-title', href: source.url, target: '_blank', rel: 'noreferrer noopener' }, label),
@@ -751,7 +755,7 @@ window.__ModuleLoader__.load({
         return h('div', { className: 'wh-card-body' },
           card.sources.length === 0
             ? h('p', { className: 'wh-card-empty' }, t('cardNoResults'))
-            : card.sources.map((source, index) => h(SourceItem, { key: index, source })),
+            : card.sources.map((source, index) => h(SourceItem, { key: index, source, index })),
           card.truncated ? h('p', { className: 'wh-card-empty' }, t('cardSourcesTruncated')) : null)
       }
       return h('div', { className: 'wh-card-body' },

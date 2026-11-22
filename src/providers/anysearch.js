@@ -6,7 +6,7 @@
  * its own search text, so this file owns that layout and nothing else.
  */
 
-import { fetchResult, searchResult } from '../sources.js'
+import { fetchResult, groupedSearchResult, searchResult } from '../sources.js'
 import { bearer, requestHeaders } from '../transport.js'
 
 const DOMAINS = [
@@ -48,6 +48,23 @@ function parseSources(text) {
     current.snippet = current.snippet === undefined ? excerpt : `${current.snippet} ${excerpt}`
   }
   return sources.filter(source => typeof source.url === 'string')
+}
+
+
+/**
+ * Split a batch response into its per-query sections. Each section repeats the
+ * single-search layout under a `## Query N:` heading, so this only finds the
+ * boundaries and reuses the parser above.
+ */
+function parseBatches(text) {
+  const groups = []
+  const parts = text.split(/^##\s+Query\s+\d+:\s*(.+)$/m)
+  for (let index = 1; index < parts.length; index += 2) {
+    const query = parts[index].trim()
+    const items = parseSources(parts[index + 1] ?? '')
+    if (items.length > 0) groups.push({ query, items })
+  }
+  return groups
 }
 
 /** Read the endpoint's `{ url, title, content }` envelope into page text. */
@@ -169,6 +186,12 @@ export default {
         additionalProperties: false,
       },
       args: args => ({ queries: args.queries }),
+      // Each query keeps its own section: the card groups by it, and the model
+      // reads the same grouping instead of one undifferentiated list.
+      parse: (text) => {
+        const groups = parseBatches(text)
+        return groups.length === 0 ? { text } : groupedSearchResult(groups)
+      },
     },
 
     score: {

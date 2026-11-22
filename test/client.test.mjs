@@ -223,3 +223,29 @@ test('an expanded search numbers its sources', async () => {
   const indexes = nodes.filter(node => node.className === 'wh-item-index').map(node => node.text)
   assert.deepEqual(indexes, ['1', '2', '3'])
 })
+
+test('a batch search groups its sources by query', async () => {
+  const { registrations } = await load()
+  const view = registrations.find(entry => entry.registration.key === 'anysearch_batch_search').component
+  const block = {
+    kind: 'result',
+    isError: false,
+    content: [{ type: 'text', text: 'x' }],
+    call: { name: 'anysearch_batch_search', argsRaw: JSON.stringify({ queries: [{ query: 'q1' }, { query: 'q2' }] }) },
+    meta: {
+      truncated: false,
+      sources: [
+        { url: 'https://a.example/1', title: 'A', group: 'q1' },
+        { url: 'https://b.example/2', title: 'B', group: 'q1' },
+        { url: 'https://c.example/3', title: 'C', group: 'q2' },
+      ],
+    },
+  }
+  stateOverride = true
+  const nodes = walkNodes(view({ t, phase: 'result', toolName: 'anysearch_batch_search', block, useDisclosure: () => ({}) }))
+  stateOverride = undefined
+  const headings = nodes.filter(node => node.className === 'wh-card-group').map(node => node.text)
+  assert.deepEqual(headings, ['q1', 'q2'])
+  const indexes = nodes.filter(node => node.className === 'wh-item-index').map(node => node.text)
+  assert.deepEqual(indexes, ['1', '2', '1'], 'numbering restarts in each query')
+})

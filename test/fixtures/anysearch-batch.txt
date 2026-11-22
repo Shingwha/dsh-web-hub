@@ -1,0 +1,29 @@
+## Query 1: cordis fiber dispose
+
+## Search Results (2 results, 840ms)
+
+### 1. Fiber | DeepSeek Harness
+- **URL**: https://deepseek-harness.github.io/reference/cordis-api/fiber
+- Returns a disposer that tears the effect down. date: Sep 7, 2026
+
+### 2. Cordis (cordiverse/cordis)
+- **URL**: https://context7.com/cordiverse/cordis
+- Demonstrates how to use ctx.effect to register a dispose callback.
+
+```yaml
+request_id: dd2dde9d364c4324be25e2bdae2dbc45
+```
+
+---
+
+## Query 2: dsh tool registration
+
+## Search Results (1 results, 1252ms)
+
+### 1. tools/README.md at master
+- **URL**: https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/core/tools/README.md
+- Registering a tool is enough to make it visible.
+
+```yaml
+request_id: 336282eeef35469185ff612ad02595df
+```

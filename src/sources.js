@@ -53,16 +53,37 @@ export function sources(list) {
   return Array.isArray(list) ? list.map(source).filter(item => item !== undefined) : []
 }
 
+/** One bullet line: title (or host), link, snippet, date. */
+export function sourceLine(item) {
+  const label = item.title !== undefined ? item.title : hostname(item.url)
+  const snippet = item.snippet === undefined ? '' : ` — ${item.snippet}`
+  const date = item.publishedAt === undefined ? '' : ` (${item.publishedAt})`
+  return `- [${label}](${item.url})${snippet}${date}`
+}
+
 /** One markdown source list, in the shape the built-in web tools use. */
 export function formatSources(items) {
   if (items.length === 0) return `${UNTRUSTED}\n\nNo results found.`
-  const lines = items.map((item) => {
-    const label = item.title !== undefined ? item.title : hostname(item.url)
-    const snippet = item.snippet === undefined ? '' : ` — ${item.snippet}`
-    const date = item.publishedAt === undefined ? '' : ` (${item.publishedAt})`
-    return `- [${label}](${item.url})${snippet}${date}`
-  })
-  return `${UNTRUSTED}\n\nSources:\n${lines.join('\n')}\n\n${CITE}`
+  return `${UNTRUSTED}\n\nSources:\n${items.map(sourceLine).join('\n')}\n\n${CITE}`
+}
+
+/**
+ * Build one search whose results answer several queries.
+ *
+ * Each source carries the query it came from, so the card groups the list from
+ * structure instead of re-parsing text; the model reads the same grouping as
+ * headings.
+ *
+ * @param groups `[{ query, items }]`, in the order the provider returned them
+ */
+export function groupedSearchResult(groups) {
+  const kept = groups.filter(group => group.items.length > 0)
+  if (kept.length === 0) return { text: formatSources([]), meta: { truncated: false, sources: [] } }
+  const body = kept
+    .map(group => `Query: ${group.query}\n\nSources:\n${group.items.map(item => sourceLine(item)).join('\n')}`)
+    .join('\n\n')
+  const items = kept.flatMap(group => group.items.map(item => ({ ...item, group: group.query })))
+  return { text: `${UNTRUSTED}\n\n${body}\n\n${CITE}`, meta: { truncated: false, sources: items } }
 }
 
 /**

@@ -26,6 +26,18 @@ test('anysearch search reads its numbered markdown and its date', () => {
   assert.match(result.text, /^External web content/)
 })
 
+
+test('anysearch batch search keeps each query apart', () => {
+  const result = parse(anysearch, 'batch_search', 'anysearch-batch.txt')
+  assert.deepEqual(result.meta.sources.map(item => item.group), [
+    'cordis fiber dispose',
+    'cordis fiber dispose',
+    'dsh tool registration',
+  ])
+  assert.match(result.text, /Query: cordis fiber dispose\n\nSources:/)
+  assert.match(result.text, /Query: dsh tool registration\n\nSources:/)
+})
+
 test('anysearch extract lifts the JSON envelope into page text', () => {
   const result = parse(anysearch, 'extract', 'anysearch-extract.json', { url: 'https://example.com' })
   assert.equal(result.meta.url, 'https://example.com')

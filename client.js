@@ -486,6 +486,8 @@ window.__ModuleLoader__.load({
       '.wh-card-text{margin:0;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;line-height:1.6;white-space:pre-wrap;overflow-wrap:anywhere;color:var(--dsw-alias-label-secondary)}',
       '.wh-item{display:flex;gap:8px;min-width:0}',
       '.wh-item-index{flex:none;width:14px;text-align:right;font-size:11px;line-height:1.6;color:var(--dsw-alias-label-tertiary);font-variant-numeric:tabular-nums}',
+      '.wh-card-group-block{display:flex;flex-direction:column;gap:10px;min-width:0}',
+      '.wh-card-group{font-size:11.5px;line-height:1.5;font-weight:500;color:var(--dsw-alias-label-tertiary)}',
       '.wh-item-mark{display:inline-flex;flex:none;margin-top:1px}',
       '.wh-item-main{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}',
       '.wh-site{position:relative;display:inline-flex;flex:none;align-items:center;justify-content:center;overflow:hidden;border-radius:4px;color:#fff;font-size:9px;font-weight:600;line-height:1;box-shadow:inset 0 0 0 0.5px rgba(0,0,0,0.10)}',
@@ -697,6 +699,7 @@ window.__ModuleLoader__.load({
         ...typeof value.snippet === 'string' ? { snippet: value.snippet } : {},
         ...typeof value.publishedAt === 'string' ? { publishedAt: value.publishedAt } : {},
         ...typeof value.favicon === 'string' ? { favicon: value.favicon } : {},
+        ...typeof value.group === 'string' ? { group: value.group } : {},
       }
     }
 
@@ -722,6 +725,18 @@ window.__ModuleLoader__.load({
     }
 
     /** One source list entry. */
+    /** Split sources by the query that produced them, preserving order. */
+    function groupedSources(items) {
+      const groups = []
+      for (const source of items) {
+        const name = typeof source.group === 'string' ? source.group : ''
+        const last = groups[groups.length - 1]
+        if (last !== undefined && last.name === name) last.items.push(source)
+        else groups.push({ name, items: [source] })
+      }
+      return groups
+    }
+
     /** A provider date for display: an ISO timestamp shortens to its day. */
     function shortDate(value) {
       if (typeof value !== 'string' || value.length === 0) return undefined
@@ -755,7 +770,14 @@ window.__ModuleLoader__.load({
         return h('div', { className: 'wh-card-body' },
           card.sources.length === 0
             ? h('p', { className: 'wh-card-empty' }, t('cardNoResults'))
-            : card.sources.map((source, index) => h(SourceItem, { key: index, source, index })),
+            : card.sources.some(source => typeof source.group === 'string')
+              ? groupedSources(card.sources).map((group, groupIndex) => h('div', {
+                key: groupIndex,
+                className: 'wh-card-group-block',
+              },
+              group.name.length > 0 ? h('span', { className: 'wh-card-group' }, group.name) : null,
+              group.items.map((source, index) => h(SourceItem, { key: index, source, index }))))
+              : card.sources.map((source, index) => h(SourceItem, { key: index, source, index })),
           card.truncated ? h('p', { className: 'wh-card-empty' }, t('cardSourcesTruncated')) : null)
       }
       return h('div', { className: 'wh-card-body' },

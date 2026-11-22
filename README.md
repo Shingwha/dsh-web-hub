@@ -63,7 +63,7 @@ npm pack
 | **Exa** | ✅ | ✅ | ✅ |
 | **Tavily** | ✅ | ✅ | ✅ 有每日额度，用尽后需 key |
 | **Firecrawl** | ✅ | ✅ | ✅ 匿名额度低 |
-| **Parallel** | ✅ | ✅ | ✅ 深研需 key |
+| **Parallel** | ✅ | ✅ | ✅ 深研、图片需 key |
 
 ## 卸载
 

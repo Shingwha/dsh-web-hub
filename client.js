@@ -17,6 +17,7 @@ window.__ModuleLoader__.load({
      */
     const TOOL_NOTES = {
       parallel_research: 'needKey',
+      parallel_image_search: 'needKey',
     }
 
     const zh = {

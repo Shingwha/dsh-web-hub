@@ -65,7 +65,7 @@ Keys are stored in the local credential store; the configuration keeps only the 
 | **Exa** | ✅ | ✅ | ✅ |
 | **Tavily** | ✅ | ✅ | ✅ daily allowance, then needs a key |
 | **Firecrawl** | ✅ | ✅ | ✅ low anonymous allowance |
-| **Parallel** | ✅ | ✅ | ✅ research needs a key |
+| **Parallel** | ✅ | ✅ | ✅ research and images need a key |
 
 ## Uninstall
 

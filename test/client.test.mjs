@@ -167,7 +167,7 @@ test('the panel lays tools out as cards, one per tool', async () => {
   const state = {
     status: 'ready',
     value: {
-      tools: { anysearch_search: true, anysearch_extract: false, tavily_crawl: false },
+      tools: { web_search: true, anysearch_search: true, anysearch_extract: false, tavily_crawl: false },
       providers: {
         anysearch: { title: 'AnySearch', keyRef: 'ANYSEARCH_API_KEY' },
         tavily: { title: 'Tavily', keyRef: 'TAVILY_API_KEY' },
@@ -186,10 +186,11 @@ test('the panel lays tools out as cards, one per tool', async () => {
     reload: () => {},
   }))
   const cards = nodes.filter(node => node.className === 'wh-tool')
-  assert.equal(cards.length, 3, 'one card per tool')
-  assert.deepEqual(cards.map(card => card.on), ['true', 'false', 'false'])
+  assert.equal(cards.length, 4, 'one card per tool, built-ins included')
+  assert.deepEqual(cards.map(card => card.on), ['true', 'true', 'false', 'false'])
   assert.ok(nodes.some(node => node.className === 'wh-grid'), 'cards live in a wrapping grid')
   assert.ok(nodes.some(node => node.className === 'wh-group-count'), 'the group header counts enabled tools')
   assert.ok(nodes.some(node => node.text === '1/2'), 'one of two AnySearch tools is on')
   assert.ok(nodes.some(node => node.className === 'wh-note'), 'a key-only tool says so while unconfigured')
+  assert.ok(nodes.filter(node => node.src?.startsWith('data:image')).length >= 3, 'each group head carries a bundled mark')
 })

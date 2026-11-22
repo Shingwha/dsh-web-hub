@@ -57,8 +57,10 @@ async function run(ctx, provider, tool, settings, args, exec) {
   const input = args ?? {}
   const send = createTransport(provider, cfg, key)
   try {
-    const text = await send(tool.mcp, tool.args === undefined ? input : tool.args(input, cfg), exec.signal)
-    return normalize(tool.parse === undefined ? { text } : tool.parse(text, { args: input, cfg }))
+    const outcome = await send(tool.mcp, tool.args === undefined ? input : tool.args(input, cfg), exec.signal)
+    return normalize(tool.parse === undefined
+      ? { text: outcome.text }
+      : tool.parse(outcome.text, { args: input, cfg, meta: outcome.meta }))
   } catch (error) {
     if (exec.signal?.aborted === true) throw error
     // A bare "fetch failed" says nothing; the cause carries the socket reason.

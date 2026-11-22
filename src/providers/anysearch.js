@@ -67,6 +67,22 @@ function parseBatches(text) {
   return groups
 }
 
+
+/**
+ * Attach the provider's request id to a search result.
+ *
+ * `anysearch_score` takes one of these ids, and the id only exists in the MCP
+ * `_meta` — the text never carries it — so it has to reach the model somewhere.
+ */
+function withRequestIds(result, meta) {
+  const one = typeof meta?.request_id === 'string' && meta.request_id.length > 0 ? meta.request_id : ''
+  const many = Array.isArray(meta?.request_ids) ? meta.request_ids.filter(id => typeof id === 'string') : []
+  if (one.length > 0) return { ...result, text: `${result.text}\n\nrequest_id: ${one}` }
+  if (many.length === 0) return result
+  const listed = many.map((id, index) => `- ${id} (query ${index + 1})`).join('\n')
+  return { ...result, text: `${result.text}\n\nrequest_ids:\n${listed}` }
+}
+
 /** Read the endpoint's `{ url, title, content }` envelope into page text. */
 function parsePage(text, args) {
   try {
@@ -112,11 +128,11 @@ export default {
           },
           domain: {
             type: 'string', enum: DOMAINS,
-            description: 'Vertical domain. Omit for general search; when set, look it up with anysearch_get_sub_domains first.',
+            description: 'Vertical domain. Omit for general web search; when set, look it up with anysearch_get_sub_domains first.',
           },
           sub_domain: {
             type: 'string',
-            description: 'Vertical sub-domain returned by anysearch_get_sub_domains. Only used together with a domain.',
+            description: 'Capability id from anysearch_get_sub_domains, such as academic.citation. Omit it to get that domain own records; set it to run one capability with sub_domain_params.',
           },
           sub_domain_params: {
             type: 'object',
@@ -134,7 +150,7 @@ export default {
         return count > 0 ? { ...rest, max_results: count } : rest
       },
       // An unexpected payload keeps the provider's own words and no card data.
-      parse: text => searchResult({ items: parseSources(text), raw: text }),
+      parse: (text, { meta }) => withRequestIds(searchResult({ items: parseSources(text), raw: text }), meta),
     },
 
     extract: {
@@ -188,10 +204,9 @@ export default {
       args: args => ({ queries: args.queries }),
       // Each query keeps its own section: the card groups by it, and the model
       // reads the same grouping instead of one undifferentiated list.
-      parse: (text) => {
-        const groups = parseBatches(text)
-        return groups.length === 0 ? { text } : groupedSearchResult(groups)
-      },
+      parse: (text, { meta }) => (parseBatches(text).length === 0
+        ? { text }
+        : withRequestIds(groupedSearchResult(parseBatches(text)), meta)),
     },
 
     score: {

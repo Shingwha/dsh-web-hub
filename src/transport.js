@@ -80,7 +80,7 @@ function failure(status, body) {
  * @param input.args tool arguments
  * @param input.headers extra request headers (authentication, provider tags)
  * @param input.signal caller cancellation
- * @returns the tool's text output
+ * @returns `{ text, meta }`: the tool's text output and the provider's `_meta`
  */
 export async function callTool({ url, name, args, headers = {}, signal }) {
   const request = () => fetch(url, {
@@ -106,7 +106,7 @@ export async function callTool({ url, name, args, headers = {}, signal }) {
     .join('\n\n')
 
   if (result.isError === true) throw new Error(body.length > 0 ? body : 'the provider reported an error')
-  return body
+  return { text: body, meta: result._meta ?? {} }
 }
 
 /**

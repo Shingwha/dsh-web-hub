@@ -38,6 +38,16 @@ test('anysearch batch search keeps each query apart', () => {
   assert.match(result.text, /Query: dsh tool registration\n\nSources:/)
 })
 
+test('a search carries the provider request id', () => {
+  const result = anysearch.tools.search.parse(fixture('anysearch-search.txt'), { args: {}, cfg, meta: { request_id: 'r1' } })
+  assert.match(result.text, /\n\nrequest_id: r1$/)
+})
+
+test('a batch lists one id per query', () => {
+  const result = anysearch.tools.batch_search.parse(fixture('anysearch-batch.txt'), { args: {}, cfg, meta: { request_ids: ['a1', 'b2'] } })
+  assert.match(result.text, /request_ids:\n- a1 \(query 1\)\n- b2 \(query 2\)$/)
+})
+
 test('anysearch extract lifts the JSON envelope into page text', () => {
   const result = parse(anysearch, 'extract', 'anysearch-extract.json', { url: 'https://example.com' })
   assert.equal(result.meta.url, 'https://example.com')

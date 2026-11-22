@@ -35,16 +35,14 @@ window.__ModuleLoader__.load({
       renderError: '面板渲染出错：',
       cardSearch: '搜索',
       cardExtract: '抓取',
-      cardCount: '{count} 条',
+      cardCount: '{count} 个网页',
       cardNoResults: '没有找到结果',
-      cardSourcesTruncated: '来源已截断',
+      cardSourcesTruncated: '仅显示前几个来源',
       cardContentTruncated: '内容已截断',
-      cardCopy: '复制',
-      cardCopied: '已复制',
-      cardCode: '代码',
-      cardWrap: '自动换行',
-      cardUnwrap: '不换行',
-      cardFootnotes: '脚注',
+      cardRunning: '进行中',
+      cardFailed: '失败',
+      cardExpand: '展开',
+      cardCollapse: '收起',
     }
 
     const en = {
@@ -72,16 +70,14 @@ window.__ModuleLoader__.load({
       renderError: 'The panel failed to render: ',
       cardSearch: 'Search',
       cardExtract: 'Fetch',
-      cardCount: '{count} results',
+      cardCount: '{count} pages',
       cardNoResults: 'No results found',
-      cardSourcesTruncated: 'Sources truncated',
-      cardContentTruncated: 'Content truncated',
-      cardCopy: 'Copy',
-      cardCopied: 'Copied',
-      cardCode: 'Code',
-      cardWrap: 'Wrap',
-      cardUnwrap: 'No wrap',
-      cardFootnotes: 'Footnotes',
+      cardSourcesTruncated: 'Only the first sources are shown',
+      cardContentTruncated: 'content truncated',
+      cardRunning: 'running',
+      cardFailed: 'failed',
+      cardExpand: 'Expand',
+      cardCollapse: 'Collapse',
     }
 
     const STYLES = [
@@ -403,24 +399,73 @@ window.__ModuleLoader__.load({
 
     // ── Tool cards ──────────────────────────────────────────────────────────
     //
-    // Search and fetch calls render through the same primitives the built-in web
-    // tools use: `DisclosureRow` for the row and `WebBlock` for the body. The
-    // model comes from the result's persisted `meta`, never from the lossy
-    // model-facing text; anything unreadable falls back to that text.
-
-    /** Styles for the card fallbacks; the chat never mounts the plugin panel. */
-    const CARD_STYLES = [
-      '.wh-card-summary{font-size:12px;line-height:1.5;color:var(--dsw-alias-label-tertiary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
-      '.wh-card-text{margin:0;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;line-height:1.6;white-space:pre-wrap;overflow-wrap:anywhere;color:var(--dsw-alias-label-secondary)}',
-      '.wh-card-plain{display:flex;flex-direction:column;gap:4px;padding:8px 0}',
-      '.wh-card-title{font-size:12px;line-height:1.5;color:var(--dsw-alias-label-primary)}',
-    ]
+    // A search or fetch call is one compact row: what ran, what it found, and
+    // nothing else until the reader opens it. The card draws its own icon and
+    // chevron rather than borrowing a Harness client primitive, so the shape
+    // here is ours and a DSH upgrade cannot change it. Data comes from the
+    // result's persisted `meta`; anything unreadable falls back to the text.
 
     /** Every tool name that renders through the search card. */
     const SEARCH_TOOLS = ['anysearch_search']
 
     /** Every tool name that renders through the fetch card. */
     const EXTRACT_TOOLS = ['anysearch_extract']
+
+    /** Card rules live with the card: the chat never mounts the plugin panel. */
+    const CARD_STYLES = [
+      '.wh-card{display:flex;flex-direction:column;gap:2px;color:var(--dsw-alias-label-tertiary)}',
+      '.wh-card-row{display:flex;align-items:center;gap:8px;min-height:24px;padding:2px 0;border-radius:4px}',
+      '.wh-card-row{cursor:pointer}',
+      '.wh-card-row:hover{color:var(--dsw-alias-label-secondary)}',
+      '.wh-card-failed{color:var(--dsw-alias-state-error-primary)}',
+      '.wh-card-icon{flex:none;display:inline-flex;align-items:center;color:currentColor}',
+      '.wh-card-label{flex:none;font-size:12.5px;line-height:1.5;color:var(--dsw-alias-label-secondary)}',
+      '.wh-card-summary{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12.5px;line-height:1.5}',
+      '.wh-card-link{color:var(--dsw-alias-link);text-decoration:none}',
+      '.wh-card-row:hover .wh-card-link{text-decoration:underline}',
+      '.wh-card-meta{flex:none;margin-left:auto;font-size:11px;line-height:1.5;color:var(--dsw-alias-label-tertiary);font-variant-numeric:tabular-nums}',
+      '.wh-card-failed .wh-card-meta{color:inherit}',
+      '.wh-card-chevron{flex:none;display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;margin:0;padding:0;border:0;background:none;color:inherit;cursor:pointer;transition:transform .12s ease}',
+      '.wh-card-chevron[aria-expanded=true]{transform:rotate(180deg)}',
+      '.wh-card-body{display:flex;flex-direction:column;gap:10px;padding:4px 0 10px 22px}',
+      '.wh-card-empty{margin:0;font-size:12px;line-height:1.5;color:var(--dsw-alias-label-tertiary)}',
+      '.wh-card-preview{margin:0;font-size:12px;line-height:1.55;color:var(--dsw-alias-label-secondary);overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical}',
+      '.wh-card-text{margin:0;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;line-height:1.6;white-space:pre-wrap;overflow-wrap:anywhere;color:var(--dsw-alias-label-secondary)}',
+      '.wh-item{display:flex;flex-direction:column;gap:2px;min-width:0}',
+      '.wh-item-title{font-size:12.5px;line-height:1.5;color:var(--dsw-alias-label-primary);text-decoration:none}',
+      '.wh-item-title:hover{text-decoration:underline}',
+      '.wh-item-meta{font-size:11px;line-height:1.5;color:var(--dsw-alias-label-tertiary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+      '.wh-item-snippet{font-size:12px;line-height:1.55;color:var(--dsw-alias-label-secondary);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}',
+    ]
+
+    /** 14px stroked icon drawn from the card's own paths. */
+    function CardIcon(props) {
+      return h('svg', {
+        viewBox: '0 0 16 16',
+        width: 14,
+        height: 14,
+        fill: 'none',
+        stroke: 'currentColor',
+        strokeWidth: 1.2,
+        strokeLinecap: 'round',
+        strokeLinejoin: 'round',
+        'aria-hidden': 'true',
+      }, props.paths.map((path, index) => h('path', { key: index, d: path })))
+    }
+
+    const GLOBE_PATH = [
+      'M8 14A6 6 0 1 0 8 2a6 6 0 0 0 0 12Z',
+      'M2.2 8h11.6',
+      'M8 2c1.75 1.75 2.6 3.75 2.6 6s-.85 4.25-2.6 6M8 2C6.25 3.75 5.4 5.75 5.4 8s.85 4.25 2.6 6',
+    ]
+
+    const DOCUMENT_PATH = [
+      'M4.5 1.8h4.4l2.6 2.6v9.8h-7z',
+      'M8.9 1.8v2.6h2.6',
+      'M6.2 8.2h3.6M6.2 10.6h3.6',
+    ]
+
+    const CHEVRON_PATH = ['M4.5 6.2 8 9.7l3.5-3.5']
 
     /** The call head of any Tool phase; its arguments are a JSON string. */
     function callOf(block) {
@@ -449,7 +494,17 @@ window.__ModuleLoader__.load({
         .join('\n\n')
     }
 
-    /** One source, narrowed to the fields the shared block renders. */
+    /** Host plus path for a URL we could not parse. */
+    function displayUrl(url) {
+      try {
+        const parsed = new URL(url)
+        return `${parsed.hostname}${parsed.pathname === '/' ? '' : parsed.pathname}`
+      } catch {
+        return url
+      }
+    }
+
+    /** One source, narrowed to the fields the card renders. */
     function cardSource(value) {
       if (value === null || typeof value !== 'object' || Array.isArray(value)) return undefined
       if (typeof value.url !== 'string') return undefined
@@ -461,7 +516,7 @@ window.__ModuleLoader__.load({
       }
     }
 
-    /** Card props for a settled search, or undefined for the plain fallback. */
+    /** Card data for a settled search, or undefined for the text fallback. */
     function searchCard(block) {
       if (block === undefined || block === null || block.isError === true) return undefined
       const meta = block.meta
@@ -469,15 +524,10 @@ window.__ModuleLoader__.load({
       if (typeof meta.truncated !== 'boolean' || !Array.isArray(meta.sources)) return undefined
       const sources = meta.sources.map(cardSource)
       if (sources.some(source => source === undefined)) return undefined
-      return {
-        kind: 'search',
-        sources,
-        truncated: meta.truncated,
-        ...typeof meta.answer === 'string' ? { answer: meta.answer } : {},
-      }
+      return { kind: 'search', sources, truncated: meta.truncated }
     }
 
-    /** Card props for a fetched page, or undefined for the plain fallback. */
+    /** Card data for a fetched page, or undefined for the text fallback. */
     function fetchCard(block) {
       if (block === undefined || block === null || block.isError === true) return undefined
       const meta = block.meta
@@ -487,29 +537,51 @@ window.__ModuleLoader__.load({
       return { kind: 'fetch', url: meta.url, statusCode: meta.statusCode, truncated: meta.truncated }
     }
 
-    /** The chrome labels the shared web block needs, from our own dictionaries. */
-    function webLabels(t) {
-      return {
-        noResults: t('cardNoResults'),
-        sourcesTruncated: t('cardSourcesTruncated'),
-        http: 'HTTP',
-        contentTruncated: t('cardContentTruncated'),
-        markdown: {
-          code: {
-            copyLabel: t('cardCopy'),
-            copiedLabel: t('cardCopied'),
-            toolbarLabels: {
-              codeLabel: t('cardCode'),
-              wrapLabel: t('cardWrap'),
-              unwrapLabel: t('cardUnwrap'),
-            },
-          },
-          footnotes: t('cardFootnotes'),
-        },
-      }
+    /** Drop the title and source lines a fetched page starts with. */
+    function pageBody(text) {
+      return text
+        .replace(/^#[^\n]*\n+/, '')
+        .replace(/^Source:[^\n]*\n+/, '')
+        .trim()
     }
 
-    /** Degrade a crashing shared block to the model-facing text. */
+    /** One source list entry. */
+    function SourceItem(props) {
+      const { source } = props
+      const label = typeof source.title === 'string' && source.title.length > 0 ? source.title : displayUrl(source.url)
+      const meta = [displayUrl(source.url), source.publishedAt]
+        .filter(part => typeof part === 'string' && part.length > 0)
+        .join(' · ')
+      return h('div', { className: 'wh-item' },
+        h('a', { className: 'wh-item-title', href: source.url, target: '_blank', rel: 'noreferrer noopener' }, label),
+        meta.length > 0 ? h('span', { className: 'wh-item-meta' }, meta) : null,
+        typeof source.snippet === 'string' && source.snippet.length > 0
+          ? h('span', { className: 'wh-item-snippet' }, source.snippet)
+          : null)
+    }
+
+    /** The opened body: source entries, a page preview, or the raw text. */
+    function CardBody(props) {
+      const { t, kind, card, text } = props
+      if (card !== undefined && kind === 'search') {
+        return h('div', { className: 'wh-card-body' },
+          card.sources.length === 0
+            ? h('p', { className: 'wh-card-empty' }, t('cardNoResults'))
+            : card.sources.map((source, index) => h(SourceItem, { key: index, source })),
+          card.truncated ? h('p', { className: 'wh-card-empty' }, t('cardSourcesTruncated')) : null)
+      }
+      if (card !== undefined && kind === 'fetch') {
+        const status = `HTTP ${card.statusCode}${card.truncated ? ` · ${t('cardContentTruncated')}` : ''}`
+        const preview = pageBody(text)
+        return h('div', { className: 'wh-card-body' },
+          h('p', { className: 'wh-card-empty' }, status),
+          preview.length > 0 ? h('p', { className: 'wh-card-preview' }, preview) : null)
+      }
+      return h('div', { className: 'wh-card-body' },
+        text.length === 0 ? null : h('pre', { className: 'wh-card-text' }, text))
+    }
+
+    /** Degrade a crashing card to the model-facing text. */
     class CardBoundary extends React.Component {
       constructor(props) {
         super(props)
@@ -528,54 +600,69 @@ window.__ModuleLoader__.load({
     }
 
     function ToolCard(props) {
-      const { t, kind, phase, block, useDisclosure } = props
-      const { expanded, toggle } = useDisclosure()
+      const { t, kind, phase, block } = props
+      const [open, setOpen] = React.useState(false)
       const args = callArguments(block)
       const card = kind === 'search' ? searchCard(block) : fetchCard(block)
       const text = resultText(block)
+      const running = phase !== 'result'
+      const failed = phase === 'result' && block !== undefined && block !== null && block.isError === true
       const query = args !== undefined && typeof args.query === 'string' ? args.query : ''
       const url = args !== undefined && typeof args.url === 'string' ? args.url : ''
-      const label = kind === 'search' ? query : url
       const count = card !== undefined && card.kind === 'search' ? t('cardCount', { count: card.sources.length }) : ''
-      const summary = [label, count].filter(part => part.length > 0).join(' · ')
-      const expandable = card !== undefined || text.length > 0
-      const body = card !== undefined && typeof UI.WebBlock === 'function'
-        ? h(CardBoundary, { text }, h(UI.WebBlock, { ...card, labels: webLabels(t) }))
-        : text.length > 0 ? h('pre', { className: 'wh-card-text' }, text) : null
-      const title = t(kind === 'search' ? 'cardSearch' : 'cardExtract')
+      const status = failed ? t('cardFailed') : running ? t('cardRunning') : count
+      const expandable = !running && (card !== undefined || text.length > 0)
+      const toggle = () => { if (expandable) setOpen(value => !value) }
 
-      if (typeof UI.DisclosureRow !== 'function') {
-        return h('div', { className: 'wh-card-plain' },
-          h('span', { className: 'wh-card-title' }, title),
-          summary.length === 0 ? null : h('span', { className: 'wh-card-summary' }, summary),
-          body)
-      }
-      const icon = kind === 'search'
-        ? (typeof UI.IconGlobeOutlineRegular === 'function' ? h(UI.IconGlobeOutlineRegular, { size: 14 }) : null)
-        : (typeof UI.IconBrowseOutlineRegular === 'function' ? h(UI.IconBrowseOutlineRegular, { size: 14 }) : null)
-      return h(UI.DisclosureRow, {
-        icon,
-        title,
-        running: phase !== 'result',
-        open: expanded && expandable,
-        expandable,
-        expandOnRowClick: true,
-        keepContentWhenOpen: true,
-        onToggle: toggle,
-        collapsedContent: summary.length === 0 ? null : h('span', { className: 'wh-card-summary' }, summary),
-      }, body)
+      // The row itself is only a pointer convenience; the chevron is the real
+      // control, so a keyboard and a screen reader get one button whose state
+      // they can read, and the URL keeps its own link semantics.
+      const row = h('div', {
+        className: failed ? 'wh-card-row wh-card-failed' : 'wh-card-row',
+        onClick: expandable ? toggle : undefined,
+      },
+        h('span', { className: 'wh-card-icon' }, h(CardIcon, { paths: kind === 'search' ? GLOBE_PATH : DOCUMENT_PATH })),
+        h('span', { className: 'wh-card-label' }, t(kind === 'search' ? 'cardSearch' : 'cardExtract')),
+        kind === 'search'
+          ? (query.length > 0 ? h('span', { className: 'wh-card-summary' }, query) : null)
+          : (url.length > 0
+            ? h('a', {
+              className: 'wh-card-summary wh-card-link',
+              href: url,
+              target: '_blank',
+              rel: 'noreferrer noopener',
+              onClick: event => event.stopPropagation(),
+            }, displayUrl(url))
+            : null),
+        h('span', { className: 'wh-card-meta' }, status),
+        expandable
+          ? h('button', {
+            type: 'button',
+            className: 'wh-card-chevron',
+            'aria-expanded': open,
+            'aria-label': t(open ? 'cardCollapse' : 'cardExpand'),
+            onClick: (event) => {
+              event.stopPropagation()
+              toggle()
+            },
+          }, h(CardIcon, { paths: CHEVRON_PATH }))
+          : null)
+
+      return h('div', { className: 'wh-card' },
+        row,
+        open && expandable ? h(CardBody, { t, kind, card, text }) : null)
     }
 
     function SearchCard(props) {
       return h(React.Fragment, null,
         h('style', null, CARD_STYLES),
-        h(ToolCard, { ...props, kind: 'search' }))
+        h(CardBoundary, { text: resultText(props.block) }, h(ToolCard, { ...props, kind: 'search' })))
     }
 
     function ExtractCard(props) {
       return h(React.Fragment, null,
         h('style', null, CARD_STYLES),
-        h(ToolCard, { ...props, kind: 'fetch' }))
+        h(CardBoundary, { text: resultText(props.block) }, h(ToolCard, { ...props, kind: 'fetch' })))
     }
 
     function ToolRow(props) {

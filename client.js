@@ -481,7 +481,7 @@ window.__ModuleLoader__.load({
       '.wh-card-failed .wh-card-meta{color:inherit}',
       '.wh-card-chevron{flex:none;margin-left:auto;display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;margin:0;padding:0;border:0;background:none;color:inherit;cursor:pointer;transition:transform .12s ease}',
       '.wh-card-chevron[aria-expanded=true]{transform:rotate(180deg)}',
-      '.wh-card-body{display:flex;flex-direction:column;gap:10px;padding:4px 0 10px}',
+      '.wh-card-body{display:flex;flex-direction:column;gap:10px;padding:4px 0 10px;max-height:520px;overflow-y:auto}',
       '.wh-card-empty{margin:0;font-size:12px;line-height:1.5;color:var(--dsw-alias-label-tertiary)}',
       '.wh-card-text{margin:0;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;line-height:1.6;white-space:pre-wrap;overflow-wrap:anywhere;color:var(--dsw-alias-label-secondary)}',
       '.wh-item{display:flex;gap:8px;min-width:0}',

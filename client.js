@@ -24,6 +24,7 @@ window.__ModuleLoader__.load({
       keySet: '已配置',
       keyUnset: '未配置',
       needKey: '需 API Key',
+      enabledCount: '已启用的工具数',
       keyFree: '免 key',
       keySetUp: '设置',
       keyChange: '更换',
@@ -60,6 +61,7 @@ window.__ModuleLoader__.load({
       keySet: 'set',
       keyUnset: 'not set',
       needKey: 'needs API key',
+      enabledCount: 'enabled tools',
       keyFree: 'keyless',
       keySetUp: 'set up',
       keyChange: 'change',
@@ -93,16 +95,19 @@ window.__ModuleLoader__.load({
       '.wh-group-title{display:inline-flex;align-items:center;gap:8px;min-width:0}',
       '.wh-group-name{font-size:14px;font-weight:500;line-height:20px}',
       '.wh-group-tags{display:flex;align-items:center;gap:8px}',
+      '.wh-group-count{font-size:12px;line-height:1.5;color:var(--dsw-alias-label-tertiary);font-variant-numeric:tabular-nums}',
       '.wh-chip{font-size:11px;line-height:1.5;color:var(--dsw-alias-state-warning-primary,#b4690e);white-space:nowrap}',
       '.wh-chip-quiet{color:var(--dsw-alias-label-tertiary)}',
-      '.wh-panel{padding:0 16px;border-radius:var(--dsw-radius-md);background:var(--dsw-alias-bg-module-platform)}',
-      '.wh-panel>*+*{border-top:0.5px solid var(--dsw-alias-border-l2)}',
-      '.wh-row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 0}',
-      '.wh-name{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px;line-height:1.5}',
-      '.wh-row-label{display:flex;align-items:center;gap:8px;min-width:0}',
+      '.wh-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px;padding:12px;border-radius:var(--dsw-radius-md);background:var(--dsw-alias-bg-module-platform)}',
+      '.wh-tool{display:flex;flex-direction:column;gap:4px;min-width:0;padding:8px 10px;border-radius:8px;border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb,var(--dsw-alias-label-primary) 4%,var(--dsw-alias-bg-module-platform));cursor:pointer}',
+      '.wh-tool[data-on=true]{border-color:color-mix(in srgb,var(--dsw-alias-link) 45%,transparent);background:color-mix(in srgb,var(--dsw-alias-link) 12%,var(--dsw-alias-bg-module-platform))}',
+      '.wh-tool[data-busy=true]{cursor:default;opacity:0.6}',
+      '.wh-tool-main{display:flex;align-items:center;gap:10px;min-width:0}',
+      '.wh-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px;line-height:1.5}',
+      '.wh-tool-switch{display:inline-flex;flex:none}',
       '.wh-note{font-size:10.5px;font-weight:500;line-height:1.6;padding:0 5px;border-radius:4px;background:rgba(180,105,14,0.14);color:var(--dsw-alias-state-warning-primary,#b4690e);white-space:nowrap}',
       '.wh-hint{margin:0;font-size:12px;line-height:1.5;color:var(--dsw-alias-label-tertiary)}',
-      '.wh-keyrow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0}',
+      '.wh-keyrow{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0 0;border-top:0.5px solid var(--dsw-alias-border-l2)}',
       '.wh-keyrow-main{display:flex;align-items:center;gap:8px;min-width:0}',
       '.wh-keyrow-label{font-size:12px;line-height:1.5;color:var(--dsw-alias-label-secondary,var(--dsw-alias-label-tertiary))}',
       '.wh-keyrow-state{font-size:12px;line-height:1.5;color:var(--dsw-alias-label-tertiary)}',
@@ -110,6 +115,7 @@ window.__ModuleLoader__.load({
       '.wh-action{appearance:none;background:none;border:0;padding:0;font:inherit;font-size:12px;line-height:1.5;color:var(--dsw-alias-link);cursor:pointer}',
       '.wh-action:disabled{color:var(--dsw-alias-label-tertiary);cursor:default}',
       '.wh-action-strong{color:var(--dsw-alias-label-primary);font-weight:500}',
+      '.wh-key{grid-column:1/-1;padding:12px 0 0;border-top:0.5px solid var(--dsw-alias-border-l2)}',
       '.wh-key-actions{display:flex;align-items:center;gap:12px;padding:0 0 12px;flex-wrap:wrap}',
       '.wh-link{color:var(--dsw-alias-link);text-decoration:none;font-size:12px;line-height:1.5}',
       '.wh-foot{display:flex;align-items:center;justify-content:space-between;gap:12px}',
@@ -860,18 +866,33 @@ window.__ModuleLoader__.load({
         h(CardBoundary, { text: resultText(props.block) }, h(ToolCard, { ...props, kind: 'fetch' })))
     }
 
-    function ToolRow(props) {
+    /**
+     * One tool, as a card: the whole card toggles it, so the pointer does not
+     * have to find the switch. The switch stays the focusable control, and a
+     * click on it is left to its own handler.
+     */
+    function ToolSwitchCard(props) {
       const { t, name, checked, busy, keyOnly, onToggle } = props
-      return h('div', { className: 'wh-row' },
-        h('span', { className: 'wh-row-label' },
-          h('span', { className: 'wh-name' }, name),
-          keyOnly === true ? h('span', { className: 'wh-note' }, t('needKey')) : null),
-        h(UI.Switch, {
+      return h('div', {
+        className: 'wh-tool',
+        'data-on': checked ? 'true' : 'false',
+        'data-busy': busy ? 'true' : 'false',
+        onClick: () => {
+          if (!busy) onToggle(name, !checked)
+        },
+      },
+      h('div', { className: 'wh-tool-main' },
+        h('span', { className: 'wh-name', title: name }, name),
+        h('span', {
+          className: 'wh-tool-switch',
+          onClick: event => event.stopPropagation(),
+        }, h(UI.Switch, {
           checked,
           label: name,
           disabled: busy,
           onChange: next => onToggle(name, next),
-        }))
+        }))),
+      keyOnly === true ? h('span', { className: 'wh-note' }, t('needKey')) : null)
     }
 
     function ProviderSection(props) {
@@ -891,6 +912,10 @@ window.__ModuleLoader__.load({
             h(ProviderIcon, { id: group.id, size: 16 }),
             h('span', { className: 'wh-group-name' }, title)),
           h('span', { className: 'wh-group-tags' },
+            h('span', {
+              className: 'wh-group-count',
+              title: t('enabledCount'),
+            }, `${group.names.filter(name => enabled(name, tools)).length}/${group.names.length}`),
             // Only the abnormal state has to interrupt a scan.
             provider !== undefined && keyRef.length > 0 && !configured
               ? h('span', { className: 'wh-chip' }, t('keyUnset'))
@@ -898,8 +923,8 @@ window.__ModuleLoader__.load({
             provider !== undefined && keyRef.length === 0
               ? h('span', { className: 'wh-chip wh-chip-quiet' }, t('keyFree'))
               : null)),
-        h('div', { className: 'wh-panel' },
-          group.names.map(name => h(ToolRow, {
+        h('div', { className: 'wh-grid' },
+          group.names.map(name => h(ToolSwitchCard, {
             key: name,
             t,
             name,

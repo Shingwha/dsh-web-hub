@@ -61,6 +61,54 @@ function render(items, label) {
   return `${label}\n\n${entries.join('\n\n')}`
 }
 
+/**
+ * Reduce a research response to the answer, its sources, and the searches it
+ * ran. The provider hands back the whole Responses API envelope, whose useful
+ * parts are the message text, its url_citation annotations, and the queries the
+ * agent chose; everything else is transport bookkeeping.
+ *
+ * Returns the raw text when the payload is not the shape we know.
+ */
+function research(text) {
+  let payload
+  try {
+    payload = JSON.parse(text)
+  } catch {
+    return text
+  }
+  const output = Array.isArray(payload?.output) ? payload.output : []
+  const messages = output.filter(item => item?.type === 'message')
+  const parts = messages.flatMap(item => (Array.isArray(item?.content) ? item.content : []))
+  const answer = parts
+    .filter(part => part?.type === 'output_text' && typeof part.text === 'string')
+    .map(part => part.text)
+    .join('\n\n')
+  if (answer.length === 0) return text
+
+  const citations = parts
+    .flatMap(part => (Array.isArray(part?.annotations) ? part.annotations : []))
+    .filter(citation => citation?.type === 'url_citation' && typeof citation.url === 'string')
+  const seen = new Set()
+  const sources = []
+  for (const citation of citations) {
+    if (seen.has(citation.url)) continue
+    seen.add(citation.url)
+    const title = typeof citation.title === 'string' && citation.title.length > 0
+      ? citation.title
+      : citation.url
+    sources.push(`- ${title} — ${citation.url}`)
+  }
+
+  const searches = output
+    .filter(item => item?.type === 'web_search_call')
+    .map(item => item?.action?.query)
+    .filter(query => typeof query === 'string' && query.length > 0)
+
+  const blocks = [`Sources\n\n${sources.join('\n')}`]
+  if (searches.length > 0) blocks.push(`Searched\n\n${searches.map(query => `- ${query}`).join('\n')}`)
+  return `${answer}\n\n${blocks.join('\n\n')}`
+}
+
 /** @type {import('./index.js').Adapter} */
 const parallel = {
   id: 'parallel',
@@ -180,11 +228,14 @@ const parallel = {
         required: ['input'],
         additionalProperties: false,
       },
-      run: ({ cfg, key, args, signal }) => call(cfg, key, 'web_research', compact({
-        input: args.input,
-        reasoning_effort: args.reasoning_effort,
-        previous_response_id: args.previous_response_id,
-      }), signal),
+      run: async ({ cfg, key, args, signal }) => {
+        const text = await call(cfg, key, 'web_research', compact({
+          input: args.input,
+          reasoning_effort: args.reasoning_effort,
+          previous_response_id: args.previous_response_id,
+        }), signal)
+        return research(text)
+      },
     },
 
     image_search: {

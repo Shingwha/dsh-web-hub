@@ -90,6 +90,7 @@ window.__ModuleLoader__.load({
       '.wh-count{font-size:12px;line-height:1.5;color:var(--dsw-alias-label-tertiary);font-variant-numeric:tabular-nums}',
       '.wh-group{display:flex;flex-direction:column}',
       '.wh-group-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px}',
+      '.wh-group-title{display:inline-flex;align-items:center;gap:8px;min-width:0}',
       '.wh-group-name{font-size:14px;font-weight:500;line-height:20px}',
       '.wh-group-tags{display:flex;align-items:center;gap:8px}',
       '.wh-chip{font-size:11px;line-height:1.5;color:var(--dsw-alias-state-warning-primary,#b4690e);white-space:nowrap}',
@@ -453,18 +454,19 @@ window.__ModuleLoader__.load({
       '.wh-card-row[data-expandable=true]{cursor:pointer}',
       '.wh-card-row[data-expandable=true]:hover{color:var(--dsw-alias-label-secondary)}',
       '.wh-card-failed{color:var(--dsw-alias-state-error-primary)}',
-      '.wh-card-icon{flex:none;display:inline-flex;align-items:center;color:currentColor}',
+      '.wh-card-icon{flex:none;display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;color:currentColor}',
+      '.wh-provider{display:inline-flex;flex:none;align-items:center;justify-content:center;overflow:hidden}',
+      '.wh-provider-img{display:block;width:100%;height:100%;object-fit:contain}',
       '.wh-card-label{flex:none;font-size:12.5px;line-height:1.5;color:var(--dsw-alias-label-secondary)}',
       '.wh-card-provider{color:var(--dsw-alias-label-tertiary)}',
       '.wh-card-summary{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12.5px;line-height:1.5}',
       '.wh-card-link{color:var(--dsw-alias-link);text-decoration:none}',
       '.wh-card-link:hover{text-decoration:underline}',
-      '.wh-card-right{display:inline-flex;align-items:center;gap:8px;flex:none;margin-left:auto}',
       '.wh-card-marks{display:inline-flex;align-items:center;gap:4px;flex:none}',
       '.wh-card-more{font-size:10px;line-height:1.5;color:var(--dsw-alias-label-tertiary)}',
       '.wh-card-meta{flex:none;font-size:11px;line-height:1.5;color:var(--dsw-alias-label-tertiary);font-variant-numeric:tabular-nums}',
       '.wh-card-failed .wh-card-meta{color:inherit}',
-      '.wh-card-chevron{flex:none;display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;margin:0;padding:0;border:0;background:none;color:inherit;cursor:pointer;transition:transform .12s ease}',
+      '.wh-card-chevron{flex:none;margin-left:auto;display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;margin:0;padding:0;border:0;background:none;color:inherit;cursor:pointer;transition:transform .12s ease}',
       '.wh-card-chevron[aria-expanded=true]{transform:rotate(180deg)}',
       '.wh-card-body{display:flex;flex-direction:column;gap:10px;padding:4px 0 10px 22px}',
       '.wh-card-empty{margin:0;font-size:12px;line-height:1.5;color:var(--dsw-alias-label-tertiary)}',
@@ -528,6 +530,36 @@ window.__ModuleLoader__.load({
       return hash
     }
 
+    /**
+     * Bundled provider marks. A provider's own favicon is not reliable — some are
+     * a dark glyph on transparency and vanish on a dark surface — so the four
+     * shipped providers carry a 32px image here, encoded once. An icon whose logo
+     * needs a light ground names that ground; the rest paint on the page.
+     */
+    const PROVIDER_ICONS = {
+      anysearch: { src: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAABnElEQVR42u1XwU7DMAy1My/doVeO24Wf4MJ38I37Di78BBxgiAOnSROaEjePA+3UdVmXlm4FgaVKbaJaz46f/UL0142rF2OMiMiCiIr6+sAGIpqo6nMIQYmIpNoRkUWe548AzhsxM202m2vn3NMeACIqACgAbawPaZXvYhd44zgksj60yd7Rj12EqZGG8uliJiXAVACGmTtlK7WYJSFy45y7U9UHIpqUVDpF7UJEbqy1y8pHbwDMbLz39977t44Z8FmWEYBWACaRu7MefJ+lFkpqB+vT9QZjQV8LDQYdsOncAAwR2dq3vWQGNITwSkQKQMq6qN717ACccyvv/fwIQ3CRI0BCNxp9FvwaADwqAADbscaxAUDT6fSWmevDCETEANR7v4r++KUx52Xj4Vp3NKr6cqAJ2zJkrV1mWRbLzMd6vc5j1X5MY7ZpwtaWWk61vTEN4L3ln5jGbNWEXdRNBUBOFG5MY/5cTYgyRZo45Qwz64lx3PSnzVFdBzBhZunYnq9a9mL+hJmpZNO3rmY7GqrqKtbyj/g7uJr92ycb69Ipu7K+HQAAAABJRU5ErkJggg==', tile: '#f2f2f2' },
+      exa: { src: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAADuElEQVR42u2XS2hcZRTHf999zOPOncmj+KioFUSIC2MFxdaF+FipBd1YW7CbioKPhJhWSRpsx0pM0DbExAdU7KZCH24qVLQU6sKKFTdtXBgVtbVqtDUmmdyZuXNfx8UNLSj1TqYjQfCDy7c533f/5/+d8z/nqBV3TQtLuDSWeC05AKMeI6Uau1ykCQBEIIoaA6BUMvhEACkTdF0RRRBGyS4pYnsFeL6QdMT4J/SeLww+m+Pe1Sn8ENoLioveJ/GZSGC2JGgabBsvc/CIR0teEYYNMCACly/TuPIyjZIjHPiwhq7HP+PCdh5wGIKVVay9P40CarUmPIEfxLttKT6fCNi1v0p7QSP4i0eaDnPzwqvP5VDAu+/XOPKpj21d3Pu6GDAN8ANh6pww/oLN6Z8jTk4GtFsQLgSnocPMnPDk+gy9G7NMTAZsGytjmk3QAU2LWegZdIgiYaQ/RzYDbi3ODhEoOcIN1+ls784xNy90Dzo4VSFlJKdiIoBIwMoojp8IKI5XuPF6neIzFuWqoGvxuxu6YkefTXurYstImYnJkLylzjN0yUooAm0Fxa79Loc+9tjwUIb1a9LMzgsVV3j+8SyrVxq8857Lvg9qtLWov8VIU6Q4ZSr6d5Y5MxUxvDnHiqt07lll0rUhyxdfBmx/o4JtqUUJV90A3JqggB+nIp4qOuga7B6y2dlnM1MSegYdPF/Q9fokuK4sUAqiMN73jRZA4nTzfKj5cHOHgQhs7Hf4+oeQ1nz91P83qqEseCwC63pKVF0ou8Kdt5oceC3PycmAZa0aI1tyfHMq4PszIdnMvxQDmXRcB65drvFm0SaMYuo3DTu0FRSjAzYpM1a9xZTvRT2B5wtDm3Jcs1yjb0eZ07+EHD3uM76nym03GWx92sKpxIWoqQCUgpmS8MQjGdbcnWLPQZe9h2q05hVWRvHK21U+OxHw2MMZ1j2QZmZOMPQmAdAUVFxh1UqDYpfFV9+FFF+vkMvGSqfrEITC5mGHP2aFl3tzdHbozFdipbxkAFEUF6TRARtNU/QOlam6kEnHdUIpKNiKb0+FbB0r05JXjA3Y2FmFFyTHg5ZEvR+AaSiuvkKj6yWHw8dqeJ5wdlqYnom/334Xggje2usysrtKZ4fBi905fL8JPaG5YOFUhNs7De64JZ/YkAjw6INpDh/z+OgTj4LdYEekFJydjvj1XIQfwtr70nW1ZD9NRWgapNPJsqySJiPTWKKm9ELug3iLnN58aV5brhSLEpamDyb1XvT/cNro+hMpK6CrQlQkAAAAAABJRU5ErkJggg==', tile: null },
+      firecrawl: { src: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAD70lEQVR42sWXTWhcVRTHf+feN5OYjyYhTawtrUUsUk0X0mLNwo+6Eawggi0Igh8gWMFa6sKdSl00CxdSalCrKEpLwYJWaAURxEJFhW5s01aFklojJZpmvpI0M+/e4+K+dCZpMplMk3p3w7vzzv/8z//8z3miqsr/eEzd//QeFgF7/QCMAZEbBlI3AP/DYfTCmQAEAL1JALwP4QbPUXruXvzhPoiLIX4dTCwcgAYAsno9NMe4Q28R9z0DPr5JACqBeGDV7fiTR3AH94ZyeLfEAMQAio5cgshCqYh0duO/+wT9+4/wPGFpiQAIOI9+fwhp74BiEW5pQocH0YGfy52xJABcCUTwR/ejQ79DujGo33uwFv3nYlIeXQIAzoFNoed+Ij64B9rbwflywMjAeCb8jlKLDEA1ZDg8RNz3ApICTFTO1BgolmBZV+jUr/shf6UmfzC1qd2hhQzu7e2QvwhNLeBikAqAkoLOVcR9zxPv2wnphtokNe8wUg9icP2v4o6/h6xYDZNXg9hmnuZO+Pcv1KRJfzgAbZ1TYepkQBXEoJfO47/9FFm+AoqTswcHyAxBaytSGsOf+CIEdv4GSpCYij/2Plg347qCsdOzSzeBV4gi/PEDUMgGsFV8YX4GAB08H1qtsuYmgrFcUiIpl8s5aG3H/3kaf+yDINAqVTZVg0cpKI6jkzmIKlRvLTqeh56HgTTEpTIIIXHH5bgv34VCJjA1BwhTNfOBUxC7QHdl3W0E2Sxm02NEL/ejuQKYGbowFoo5/Mkj04ZYbQC8AxHi/a/gPt+DtN8asqw81iKNrUjvVkzPA5AbBWunzwzx+F9PVHVHM2v2xgKKLGvCffUOeuEUtHaE3rcR5EeROzZi7ns0kPPQtqCJ69zTQyFfRxdM0e080tISbqkm4zaGq0q0Yx+0doKA6XkwBCsVZ2nRhTqhSNJ+Ao3NUCqVW00EHclid32E3LM5MAKISaGlRmhoShwyuW8NNLfVwUBSL1mzrqz+KEJHhrHbdmMe2R4CmVBzn7lMtPtj7BO7AuViwHsUi+m5fzqrNVmxBtXr4GlKO3uRrk7IZ2HtJlJ7vwGxFcsooSwmgkKG0ovrIUqyL0ySOnAWOrqvvbN2DahH1m7A9D4JuVF0YgL7+A6wqetbykTBgFraMFuehokxdOQKdutLIbj3czJg5tuA7bNvQEMHkrJI921V6FRAkA1b0Mt55M6NmKdeS5yynlkg4ZGsXEf05lFwaTSXmX/jyWagayXR65+F1q14V33j2DswFv3tl+ANd22+NqJn1c3ZH6GlHVlz9+z3Fgxg6mPEmIWv7WIWYSGZ9kEic+8CC723YABLdP4D1RjAN71H2GUAAAAASUVORK5CYII=', tile: null },
+      tavily: { src: 'data:image/png;base64,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', tile: null },
+    }
+
+    /** One provider mark from the bundle, or null for an unknown provider. */
+    function ProviderIcon(props) {
+      const { id, size = 14 } = props
+      const icon = PROVIDER_ICONS[id]
+      if (icon === undefined) return null
+      return h('span', {
+        className: 'wh-provider',
+        'aria-hidden': 'true',
+        style: {
+          width: `${size}px`,
+          height: `${size}px`,
+          borderRadius: `${Math.round(size / 3)}px`,
+          background: icon.tile ?? 'transparent',
+        },
+      }, h('img', { className: 'wh-provider-img', src: icon.src, alt: '', width: size, height: size }))
+    }
+
     /** Home host of each provider, whose favicon marks the row. */
     const PROVIDER_HOSTS = {
       anysearch: 'anysearch.com',
@@ -540,6 +572,17 @@ window.__ModuleLoader__.load({
     function providerId(toolName) {
       const cut = toolName.indexOf('_')
       return cut === -1 ? toolName : toolName.slice(0, cut)
+    }
+
+
+    /** The leading mark of a row: bundled provider icon, else its favicon, else a glyph. */
+    function providerMark(kind, toolName) {
+      const id = providerId(toolName)
+      const bundled = ProviderIcon({ id, size: 16 })
+      if (bundled !== null) return bundled
+      const host = PROVIDER_HOSTS[id]
+      if (host !== undefined) return h(SiteIcon, { url: `https://${host}`, size: 14 })
+      return h(CardIcon, { paths: kind === 'search' ? GLOBE_PATH : DOCUMENT_PATH })
     }
 
     /** Distinct result hosts in order, for the marks shown before expanding. */
@@ -756,10 +799,7 @@ window.__ModuleLoader__.load({
         'data-expandable': expandable,
         onClick: expandable ? toggle : undefined,
       },
-        h('span', { className: 'wh-card-icon' },
-          PROVIDER_HOSTS[providerId(toolName)] !== undefined
-            ? h(SiteIcon, { url: `https://${PROVIDER_HOSTS[providerId(toolName)]}`, size: 14 })
-            : h(CardIcon, { paths: kind === 'search' ? GLOBE_PATH : DOCUMENT_PATH })),
+        h('span', { className: 'wh-card-icon' }, providerMark(kind, toolName)),
         h('span', { className: 'wh-card-label' },
           t(kind === 'search' ? 'cardSearch' : 'cardExtract'),
           h('span', { className: 'wh-card-provider' }, ` · ${providerTitle(toolName)}`)),
@@ -775,16 +815,15 @@ window.__ModuleLoader__.load({
               onClick: event => event.stopPropagation(),
             }, displayUrl(url))
             : null),
-        h('span', { className: 'wh-card-right' },
-          kind === 'search' && marks.length > 0
-            ? h('span', { className: 'wh-card-marks' },
-              marks.map(host => h(SiteIcon, { key: host, url: `https://${host}`, size: 14 })),
-              extraHosts > 0 ? h('span', { className: 'wh-card-more' }, `+${extraHosts}`) : null)
-            : null,
-          kind === 'fetch' && hasHttpUrl(url)
-            ? h(SiteIcon, { url, size: 14 })
-            : null,
-          status.length > 0 ? h('span', { className: 'wh-card-meta' }, status) : null),
+        kind === 'search' && marks.length > 0
+          ? h('span', { className: 'wh-card-marks' },
+            marks.map(host => h(SiteIcon, { key: host, url: `https://${host}`, size: 14 })),
+            extraHosts > 0 ? h('span', { className: 'wh-card-more' }, `+${extraHosts}`) : null)
+          : null,
+        kind === 'fetch' && hasHttpUrl(url)
+          ? h(SiteIcon, { url, size: 14 })
+          : null,
+        status.length > 0 ? h('span', { className: 'wh-card-meta' }, status) : null,
         expandable
           ? h('button', {
             type: 'button',
@@ -842,7 +881,9 @@ window.__ModuleLoader__.load({
           : (typeof provider?.title === 'string' && provider.title.trim().length > 0 ? provider.title.trim() : group.id)
       return h('section', { className: 'wh-group' },
         h('div', { className: 'wh-group-head' },
-          h('span', { className: 'wh-group-name' }, title),
+          h('span', { className: 'wh-group-title' },
+            h(ProviderIcon, { id: group.id, size: 16 }),
+            h('span', { className: 'wh-group-name' }, title)),
           h('span', { className: 'wh-group-tags' },
             // Only the abnormal state has to interrupt a scan.
             provider !== undefined && keyRef.length > 0 && !configured

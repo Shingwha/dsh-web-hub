@@ -33,6 +33,18 @@ async function resolveKey(ctx, ref) {
   return typeof hit?.value === 'string' && hit.value.length > 0 ? hit.value : undefined
 }
 
+/**
+ * Normalize one adapter result into the two projections every tool now carries:
+ * `text` is all the model reads, `meta` is the structured card data persisted
+ * with the session. A bare string keeps an adapter that predates cards working.
+ */
+function normalize(result) {
+  if (typeof result === 'string') return { text: result }
+  const text = typeof result?.text === 'string' ? result.text : String(result?.text ?? '')
+  const meta = result?.meta
+  return meta === undefined ? { text } : { text, meta }
+}
+
 /** Run one adapter tool, resolving the provider's live settings and credential. */
 async function run(ctx, adapter, tool, settings, args, exec) {
   const provider = providerSettings(settings, adapter)
@@ -47,14 +59,20 @@ async function run(ctx, adapter, tool, settings, args, exec) {
     throw new Error(`${adapter.title}: credential ${provider.keyRef} is not set; add it under Keys on the Plugins page`)
   }
   try {
-    return await tool.run({ cfg: provider, key, args: args ?? {}, signal: exec.signal })
+    return normalize(await tool.run({ cfg: provider, key, args: args ?? {}, signal: exec.signal }))
   } catch (error) {
     if (exec.signal?.aborted === true) throw error
     throw new Error(`${adapter.title}: ${error instanceof Error ? error.message : String(error)}`)
   }
 }
 
-/** Model-facing definition of one adapter tool. */
+/**
+ * Model-facing definition of one adapter tool.
+ *
+ * The canonical value carries both projections: `render` decides what the model
+ * reads, and `presentationMeta` is persisted beside it so the conversation card
+ * can replay from structure instead of re-parsing the lossy text.
+ */
 function definition(ctx, adapter, tool, name, settings) {
   return {
     name,
@@ -62,8 +80,13 @@ function definition(ctx, adapter, tool, name, settings) {
     parameters: tool.parameters,
     timeoutMs: providerSettings(settings, adapter).timeoutMs,
     output: {
-      schema: { type: 'string' },
-      render: (_args, value) => [{ type: 'text', text: typeof value === 'string' ? value : String(value ?? '') }],
+      schema: {
+        type: 'object',
+        properties: { text: { type: 'string' }, meta: { type: 'object' } },
+        required: ['text'],
+      },
+      render: (_args, value) => [{ type: 'text', text: typeof value?.text === 'string' ? value.text : '' }],
+      presentationMeta: (_args, value) => (value?.meta === undefined ? null : value.meta),
     },
     execute: (args, exec) => run(ctx, adapter, tool, settings, args, exec),
   }

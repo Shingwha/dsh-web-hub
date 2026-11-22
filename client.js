@@ -33,6 +33,18 @@ window.__ModuleLoader__.load({
       conflict: '配置已被其他窗口修改，已重新读取。',
       loading: '读取中…',
       renderError: '面板渲染出错：',
+      cardSearch: '搜索',
+      cardExtract: '抓取',
+      cardCount: '{count} 条',
+      cardNoResults: '没有找到结果',
+      cardSourcesTruncated: '来源已截断',
+      cardContentTruncated: '内容已截断',
+      cardCopy: '复制',
+      cardCopied: '已复制',
+      cardCode: '代码',
+      cardWrap: '自动换行',
+      cardUnwrap: '不换行',
+      cardFootnotes: '脚注',
     }
 
     const en = {
@@ -58,6 +70,18 @@ window.__ModuleLoader__.load({
       conflict: 'Configuration changed elsewhere; reloaded.',
       loading: 'Loading…',
       renderError: 'The panel failed to render: ',
+      cardSearch: 'Search',
+      cardExtract: 'Fetch',
+      cardCount: '{count} results',
+      cardNoResults: 'No results found',
+      cardSourcesTruncated: 'Sources truncated',
+      cardContentTruncated: 'Content truncated',
+      cardCopy: 'Copy',
+      cardCopied: 'Copied',
+      cardCode: 'Code',
+      cardWrap: 'Wrap',
+      cardUnwrap: 'No wrap',
+      cardFootnotes: 'Footnotes',
     }
 
     const STYLES = [
@@ -377,6 +401,183 @@ window.__ModuleLoader__.load({
         h('span', { className: 'wh-keyrow-ref' }, keyRef))
     }
 
+    // ── Tool cards ──────────────────────────────────────────────────────────
+    //
+    // Search and fetch calls render through the same primitives the built-in web
+    // tools use: `DisclosureRow` for the row and `WebBlock` for the body. The
+    // model comes from the result's persisted `meta`, never from the lossy
+    // model-facing text; anything unreadable falls back to that text.
+
+    /** Styles for the card fallbacks; the chat never mounts the plugin panel. */
+    const CARD_STYLES = [
+      '.wh-card-summary{font-size:12px;line-height:1.5;color:var(--dsw-alias-label-tertiary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+      '.wh-card-text{margin:0;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;line-height:1.6;white-space:pre-wrap;overflow-wrap:anywhere;color:var(--dsw-alias-label-secondary)}',
+      '.wh-card-plain{display:flex;flex-direction:column;gap:4px;padding:8px 0}',
+      '.wh-card-title{font-size:12px;line-height:1.5;color:var(--dsw-alias-label-primary)}',
+    ]
+
+    /** Every tool name that renders through the search card. */
+    const SEARCH_TOOLS = ['anysearch_search']
+
+    /** Every tool name that renders through the fetch card. */
+    const EXTRACT_TOOLS = ['anysearch_extract']
+
+    /** The call head of any Tool phase; its arguments are a JSON string. */
+    function callOf(block) {
+      if (block === undefined || block === null) return undefined
+      return 'kind' in block ? block.call ?? undefined : block
+    }
+
+    /** Parsed call arguments, or undefined while they are still incomplete. */
+    function callArguments(block) {
+      const call = callOf(block)
+      if (call === undefined || typeof call.argsRaw !== 'string') return undefined
+      try {
+        const value = JSON.parse(call.argsRaw)
+        return value !== null && typeof value === 'object' && !Array.isArray(value) ? value : undefined
+      } catch {
+        return undefined
+      }
+    }
+
+    /** Every text block of a settled result, joined the way the model saw them. */
+    function resultText(block) {
+      const content = block !== undefined && block !== null && Array.isArray(block.content) ? block.content : []
+      return content
+        .filter(part => part !== null && typeof part === 'object' && part.type === 'text' && typeof part.text === 'string')
+        .map(part => part.text)
+        .join('\n\n')
+    }
+
+    /** One source, narrowed to the fields the shared block renders. */
+    function cardSource(value) {
+      if (value === null || typeof value !== 'object' || Array.isArray(value)) return undefined
+      if (typeof value.url !== 'string') return undefined
+      return {
+        url: value.url,
+        ...typeof value.title === 'string' ? { title: value.title } : {},
+        ...typeof value.snippet === 'string' ? { snippet: value.snippet } : {},
+        ...typeof value.publishedAt === 'string' ? { publishedAt: value.publishedAt } : {},
+      }
+    }
+
+    /** Card props for a settled search, or undefined for the plain fallback. */
+    function searchCard(block) {
+      if (block === undefined || block === null || block.isError === true) return undefined
+      const meta = block.meta
+      if (meta === null || typeof meta !== 'object' || Array.isArray(meta)) return undefined
+      if (typeof meta.truncated !== 'boolean' || !Array.isArray(meta.sources)) return undefined
+      const sources = meta.sources.map(cardSource)
+      if (sources.some(source => source === undefined)) return undefined
+      return {
+        kind: 'search',
+        sources,
+        truncated: meta.truncated,
+        ...typeof meta.answer === 'string' ? { answer: meta.answer } : {},
+      }
+    }
+
+    /** Card props for a fetched page, or undefined for the plain fallback. */
+    function fetchCard(block) {
+      if (block === undefined || block === null || block.isError === true) return undefined
+      const meta = block.meta
+      if (meta === null || typeof meta !== 'object' || Array.isArray(meta)) return undefined
+      if (typeof meta.url !== 'string' || typeof meta.truncated !== 'boolean') return undefined
+      if (!Number.isInteger(meta.statusCode)) return undefined
+      return { kind: 'fetch', url: meta.url, statusCode: meta.statusCode, truncated: meta.truncated }
+    }
+
+    /** The chrome labels the shared web block needs, from our own dictionaries. */
+    function webLabels(t) {
+      return {
+        noResults: t('cardNoResults'),
+        sourcesTruncated: t('cardSourcesTruncated'),
+        http: 'HTTP',
+        contentTruncated: t('cardContentTruncated'),
+        markdown: {
+          code: {
+            copyLabel: t('cardCopy'),
+            copiedLabel: t('cardCopied'),
+            toolbarLabels: {
+              codeLabel: t('cardCode'),
+              wrapLabel: t('cardWrap'),
+              unwrapLabel: t('cardUnwrap'),
+            },
+          },
+          footnotes: t('cardFootnotes'),
+        },
+      }
+    }
+
+    /** Degrade a crashing shared block to the model-facing text. */
+    class CardBoundary extends React.Component {
+      constructor(props) {
+        super(props)
+        this.state = { failed: false }
+      }
+
+      static getDerivedStateFromError() {
+        return { failed: true }
+      }
+
+      render() {
+        if (!this.state.failed) return this.props.children
+        if (this.props.text.length === 0) return null
+        return h('pre', { className: 'wh-card-text' }, this.props.text)
+      }
+    }
+
+    function ToolCard(props) {
+      const { t, kind, phase, block, useDisclosure } = props
+      const { expanded, toggle } = useDisclosure()
+      const args = callArguments(block)
+      const card = kind === 'search' ? searchCard(block) : fetchCard(block)
+      const text = resultText(block)
+      const query = args !== undefined && typeof args.query === 'string' ? args.query : ''
+      const url = args !== undefined && typeof args.url === 'string' ? args.url : ''
+      const label = kind === 'search' ? query : url
+      const count = card !== undefined && card.kind === 'search' ? t('cardCount', { count: card.sources.length }) : ''
+      const summary = [label, count].filter(part => part.length > 0).join(' · ')
+      const expandable = card !== undefined || text.length > 0
+      const body = card !== undefined && typeof UI.WebBlock === 'function'
+        ? h(CardBoundary, { text }, h(UI.WebBlock, { ...card, labels: webLabels(t) }))
+        : text.length > 0 ? h('pre', { className: 'wh-card-text' }, text) : null
+      const title = t(kind === 'search' ? 'cardSearch' : 'cardExtract')
+
+      if (typeof UI.DisclosureRow !== 'function') {
+        return h('div', { className: 'wh-card-plain' },
+          h('span', { className: 'wh-card-title' }, title),
+          summary.length === 0 ? null : h('span', { className: 'wh-card-summary' }, summary),
+          body)
+      }
+      const icon = kind === 'search'
+        ? (typeof UI.IconGlobeOutlineRegular === 'function' ? h(UI.IconGlobeOutlineRegular, { size: 14 }) : null)
+        : (typeof UI.IconBrowseOutlineRegular === 'function' ? h(UI.IconBrowseOutlineRegular, { size: 14 }) : null)
+      return h(UI.DisclosureRow, {
+        icon,
+        title,
+        running: phase !== 'result',
+        open: expanded && expandable,
+        expandable,
+        expandOnRowClick: true,
+        keepContentWhenOpen: true,
+        onToggle: toggle,
+        collapsedContent: summary.length === 0 ? null : h('span', { className: 'wh-card-summary' }, summary),
+      }, body)
+    }
+
+    function SearchCard(props) {
+      return h(React.Fragment, null,
+        h('style', null, CARD_STYLES),
+        h(ToolCard, { ...props, kind: 'search' }))
+    }
+
+    function ExtractCard(props) {
+      return h(React.Fragment, null,
+        h('style', null, CARD_STYLES),
+        h(ToolCard, { ...props, kind: 'fetch' }))
+    }
+
     function ToolRow(props) {
       const { name, checked, busy, onToggle } = props
       return h('div', { className: 'wh-row' },
@@ -491,6 +692,14 @@ window.__ModuleLoader__.load({
           () => ctx.on('connection/reset', () => { void controller.load() }),
           'dsh-web-hub: reconnect refresh',
         )
+        ctx.slots.inject('tool.call.toolview', function* () {
+          for (const name of SEARCH_TOOLS) {
+            yield ctx.slots.register({ name: 'tool.call.toolview', key: name, locale: NS }, SearchCard)
+          }
+          for (const name of EXTRACT_TOOLS) {
+            yield ctx.slots.register({ name: 'tool.call.toolview', key: name, locale: NS }, ExtractCard)
+          }
+        })
         ctx.slots.inject('plugins.bundle.config', () => ctx.slots.register({
           name: 'plugins.bundle.config',
           key: BUNDLE,

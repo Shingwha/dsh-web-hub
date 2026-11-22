@@ -20,6 +20,17 @@
 - 关闭的工具不进模型上下文，也不占 token
 - 停用或卸载插件，工具与内置网页工具都自动恢复
 
+## 工具结果的两条投影
+
+每个工具返回 `{ text, meta }`：
+
+- `text` 是模型读到的全部内容，格式与内置网页工具一致（`Sources:` + 链接 + 摘要）
+- `meta` 是结构化卡片数据，经 `output.presentationMeta` 持久化进会话日志；会话回放从它重建卡片，不解析文本
+
+`meta` 形状对齐内置 `web_search`：搜索是 `{ truncated, sources: [{ url, title?, snippet?, publishedAt? }], answer? }`，抓取是 `{ truncated, url, statusCode }`。
+
+面板之外的会话卡片由 `client.js` 注册到 `tool.call.toolview`（按 wire 工具名索引），用内置同款原语 `DisclosureRow` + `WebBlock` 渲染；`meta` 缺失或畸形时退回纯文本，原语缺失时退回自绘行。
+
 ## 加来源
 
 `src/adapters/` 新增一个模块，声明自己的工具，再到 `src/adapters/index.js` 登记一行；核心与面板不用改。

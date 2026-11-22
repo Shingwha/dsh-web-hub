@@ -459,10 +459,10 @@ window.__ModuleLoader__.load({
       '.wh-card-summary{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12.5px;line-height:1.5}',
       '.wh-card-link{color:var(--dsw-alias-link);text-decoration:none}',
       '.wh-card-link:hover{text-decoration:underline}',
+      '.wh-card-right{display:inline-flex;align-items:center;gap:8px;flex:none;margin-left:auto}',
       '.wh-card-marks{display:inline-flex;align-items:center;gap:4px;flex:none}',
       '.wh-card-more{font-size:10px;line-height:1.5;color:var(--dsw-alias-label-tertiary)}',
-      '.wh-card-target{display:inline-flex;flex:none;align-items:center;margin-left:auto}',
-      '.wh-card-meta{flex:none;margin-left:auto;font-size:11px;line-height:1.5;color:var(--dsw-alias-label-tertiary);font-variant-numeric:tabular-nums}',
+      '.wh-card-meta{flex:none;font-size:11px;line-height:1.5;color:var(--dsw-alias-label-tertiary);font-variant-numeric:tabular-nums}',
       '.wh-card-failed .wh-card-meta{color:inherit}',
       '.wh-card-chevron{flex:none;display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;margin:0;padding:0;border:0;background:none;color:inherit;cursor:pointer;transition:transform .12s ease}',
       '.wh-card-chevron[aria-expanded=true]{transform:rotate(180deg)}',
@@ -775,15 +775,16 @@ window.__ModuleLoader__.load({
               onClick: event => event.stopPropagation(),
             }, displayUrl(url))
             : null),
-        kind === 'search' && marks.length > 0
-          ? h('span', { className: 'wh-card-marks' },
-            marks.map(host => h(SiteIcon, { key: host, url: `https://${host}`, size: 14 })),
-            extraHosts > 0 ? h('span', { className: 'wh-card-more' }, `+${extraHosts}`) : null)
-          : null,
-        kind === 'fetch' && hasHttpUrl(url)
-          ? h('span', { className: 'wh-card-target' }, h(SiteIcon, { url, size: 14 }))
-          : null,
-        h('span', { className: 'wh-card-meta' }, status),
+        h('span', { className: 'wh-card-right' },
+          kind === 'search' && marks.length > 0
+            ? h('span', { className: 'wh-card-marks' },
+              marks.map(host => h(SiteIcon, { key: host, url: `https://${host}`, size: 14 })),
+              extraHosts > 0 ? h('span', { className: 'wh-card-more' }, `+${extraHosts}`) : null)
+            : null,
+          kind === 'fetch' && hasHttpUrl(url)
+            ? h(SiteIcon, { url, size: 14 })
+            : null,
+          status.length > 0 ? h('span', { className: 'wh-card-meta' }, status) : null),
         expandable
           ? h('button', {
             type: 'button',

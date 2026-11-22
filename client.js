@@ -87,7 +87,7 @@ window.__ModuleLoader__.load({
       '.wh-panel>*+*{border-top:0.5px solid var(--dsw-alias-border-l2)}',
       '.wh-row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 0}',
       '.wh-row-label{display:flex;align-items:center;gap:8px;min-width:0}',
-      '.wh-note{font-size:11px;line-height:1.5;color:var(--dsw-alias-label-tertiary);white-space:nowrap}',
+      '.wh-note{font-size:11px;font-weight:500;line-height:1.6;padding:0 6px;border-radius:4px;background:rgba(180,105,14,0.14);color:var(--dsw-alias-state-warning-primary,#b4690e);white-space:nowrap}',
       '.wh-name{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px;line-height:1.5}',
       '.wh-hint{margin:0;font-size:12px;line-height:1.5;color:var(--dsw-alias-label-tertiary)}',
       '.wh-keyrow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0}',
